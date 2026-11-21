@@ -1,0 +1,8 @@
+{
+  "appId": "com.m17.social",
+  "appName": "M17",
+  "webDir": "www",
+  "backgroundColor": "#050914",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

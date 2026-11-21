@@ -1,0 +1,15 @@
+{
+  "name": "m17",
+  "version": "1.0.0",
+  "private": true,
+  "description": "M17 - Arabic social app (Capacitor + Supabase)",
+  "scripts": {
+    "serve": "python3 -m http.server 8099 --directory www",
+    "sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}
