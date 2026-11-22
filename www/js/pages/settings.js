@@ -39,7 +39,7 @@ export async function settingsPage(root, params, ctx) {
       body.append(h('p', { class: 'muted' }, 'أدخل رمز المالك لمرة واحدة. بعد التفعيل يُحذف الرمز نهائياً ولا يمكن استخدامه مرة أخرى.'), code,
         h('button', { class: 'btn primary block lg', onclick: async (e) => {
           e.target.disabled = true;
-          try { await sb.rpc('claim_owner', { code: code.value.trim().toUpperCase() }); await loadMe(); toast('تم تفعيل حساب المالك', 'ok'); close(); ctx.rerender(); } catch (er) { toast(er.message, 'err'); e.target.disabled = false; }
+          try { const r = await sb.rpc('claim_owner', { code: code.value.trim().toUpperCase() }); if (!r || !r.ok) { toast((r && r.error) || 'رمز غير صحيح', 'err'); e.target.disabled = false; return; } await loadMe(); toast('تم تفعيل حساب المالك', 'ok'); close(); ctx.rerender(); } catch (er) { toast(er.message, 'err'); e.target.disabled = false; }
         } }, 'تفعيل'));
     });
   }
