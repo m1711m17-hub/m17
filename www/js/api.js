@@ -71,6 +71,13 @@ export async function uploadMedia(bucket, file) {
   return { url, type: isVideo ? 'video' : 'image' };
 }
 
+export async function uploadAudio(bucket, file, ext = 'webm', max = 10 * 1024 * 1024) {
+  if (!file || file.size === 0) throw new Error('الملف الصوتي فارغ');
+  if (file.size > max) throw new Error('حجم الملف الصوتي كبير (الحد 10 ميغابايت)');
+  const path = `${state.me.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  return sb.storage.upload(bucket, path, file);
+}
+
 export async function followingIds() {
   const rows = await sb.from('follows').select('following_id').eq('follower_id', state.me.id);
   return rows.map((r) => r.following_id);

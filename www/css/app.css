@@ -232,3 +232,37 @@ body.in-chat .tabbar{display:none}
 .story-quote{display:flex;align-items:center;gap:8px;font-size:.78rem;opacity:.9;border-inline-start:3px solid rgba(255,255,255,.7);padding:4px 8px;margin-bottom:6px;background:rgba(0,0,0,.18);border-radius:10px}
 .story-quote img{width:34px;height:44px;object-fit:cover;border-radius:6px;margin:0;max-height:none}
 .audio-plain{max-width:100%;height:36px;margin-bottom:4px}
+
+/* ---------- stories v2 ---------- */
+.story-item{position:relative}
+.story-ring-btn{display:grid}
+.story-ring.seen{background:var(--surface2);opacity:.8}
+.story-item>.story-plus{position:absolute;top:44px;inset-inline-end:6px;bottom:auto}
+.sv-touch{position:absolute;top:70px;bottom:150px;inset-inline:0;z-index:2;touch-action:none}
+.sv-text{flex:1;display:grid;place-items:center;padding:60px 26px;text-align:center;font-size:1.9rem;font-weight:800;line-height:1.5;word-break:break-word;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+.sv-stage{position:relative}
+.sv-overlay{position:absolute;inset-inline:18px;top:42%;text-align:center;font-size:1.5rem;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);background:rgba(0,0,0,.28);padding:8px 14px;border-radius:14px;z-index:1;pointer-events:none}
+.sv-overlay.static{position:absolute;top:auto;bottom:20px;font-size:1.1rem}
+.sv-user{color:#fff;background:none}
+.sv-music{display:inline-flex;align-items:center;gap:5px;max-width:120px;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:20px;font-size:.72rem;margin-inline-end:6px}
+.sv-footer{position:absolute;bottom:0;inset-inline:0;z-index:4;padding:10px 12px calc(12px + var(--safe-b));background:linear-gradient(transparent,rgba(0,0,0,.75));display:flex;flex-direction:column;gap:8px}
+.sv-footer.mine{flex-direction:row;align-items:center;gap:10px}
+.sv-stat{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);padding:9px 14px;border-radius:22px;color:#fff;backdrop-filter:blur(8px)}.sv-stat.danger{margin-inline-start:auto;background:rgba(255,77,109,.35)}
+.sv-vis{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;color:rgba(255,255,255,.8)}
+.sv-emojis{display:flex;justify-content:space-around}.sv-emojis button{font-size:1.5rem;padding:4px 8px}
+.sv-replyrow{display:flex;gap:8px;align-items:center}
+.sv-reply{flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:24px;padding:11px 16px;color:#fff;outline:0}.sv-reply::placeholder{color:rgba(255,255,255,.65)}
+.sv-send,.sv-heart{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.14)}
+.sv-heart.on{color:var(--pink);background:rgba(255,79,163,.22)}.sv-heart.on svg{fill:var(--pink)}
+.liked-heart{color:var(--pink)}.liked-heart svg{fill:var(--pink)}
+.sv-panel{position:absolute;inset-inline:0;bottom:0;max-height:65%;z-index:6;background:var(--bg2);border-radius:24px 24px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;animation:enter .2s}
+.sv-panel[hidden]{display:none}
+.sv-panel-head{display:flex;align-items:center;gap:8px;padding:12px 12px 6px}.sv-panel-head .seg{flex:1}
+.sv-panel-body{overflow-y:auto;padding:4px 14px calc(14px + var(--safe-b))}
+.sv-compose{border-radius:20px;padding:18px;margin:10px 0;min-height:260px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.sv-compose-text{background:none;border:0;outline:0;color:#fff;font:inherit;font-size:1.6rem;font-weight:800;text-align:center;resize:none;width:100%;min-height:170px;text-shadow:0 2px 12px rgba(0,0,0,.35)}.sv-compose-text::placeholder{color:rgba(255,255,255,.7)}
+.bg-picks{display:flex;gap:10px;justify-content:center}.bg-pick{width:30px;height:30px;border-radius:50%;border:3px solid transparent}.bg-pick.on{border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
+.story-opts{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.music-box .row{gap:8px}.music-ico{width:36px;height:36px;border-radius:12px;background:var(--grad);display:grid;place-items:center;flex:none}
+.vis-box{display:flex;flex-direction:column;gap:8px}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:transparent;flex:none}.check.on{background:var(--grad);border-color:transparent;color:#fff}

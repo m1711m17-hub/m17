@@ -99,7 +99,7 @@ export function createClient(url, key, loginDomain) {
     insert(rows) { this.method = 'POST'; this.body = rows; return this; }
     update(patch) { this.method = 'PATCH'; this.body = patch; return this; }
     delete() { this.method = 'DELETE'; return this; }
-    upsert(rows, onConflict) { this.method = 'POST'; this.body = rows; this.conflict = onConflict || null; this.prefer.push('resolution=merge-duplicates'); return this; }
+    upsert(rows, onConflict, ignore = false) { this.method = 'POST'; this.body = rows; this.conflict = onConflict || null; this.prefer.push(ignore ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates'); return this; }
     _f(col, op, v) { this.f.push(`${enc(col)}=${op}.${enc(v)}`); return this; }
     eq(c, v) { return this._f(c, 'eq', v); }
     neq(c, v) { return this._f(c, 'neq', v); }

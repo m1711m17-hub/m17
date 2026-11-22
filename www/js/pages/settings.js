@@ -1,6 +1,8 @@
 import { h, icon, avatar, clear, toast, sheet, confirmBox } from '../lib/dom.js';
 import { sb, state, loadMe, PROFILE_MINI } from '../api.js';
 import { headerBar } from './home.js';
+import { pickPeople } from './people.js';
+import { VIS_LABEL } from './stories.js';
 import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
 
@@ -10,6 +12,27 @@ export async function settingsPage(root, params, ctx) {
 
   const row = (ic, title, sub, right, onclick) => h('div', { class: 'set-row', onclick }, h('div', { class: 'set-ico' }, icon(ic, 20)), h('div', { class: 'grow' }, h('b', null, title), sub && h('div', { class: 'muted small' }, sub)), right);
   const sw = (on, onChange) => { const b = h('button', { class: 'switch' + (on ? ' on' : ''), role: 'switch', 'aria-checked': on, onclick: async (e) => { e.stopPropagation(); const v = !b.classList.contains('on'); b.classList.toggle('on', v); b.setAttribute('aria-checked', v); try { await onChange(v); } catch (er) { b.classList.toggle('on', !v); toast(er.message, 'err'); } } }, h('i')); return b; };
+
+  async function storyPrivacySheet() {
+    sheet('خصوصية الحالات', async (body, close) => {
+      const cur = ['everyone', 'followers', 'custom'].includes(state.me.story_default) ? state.me.story_default : 'everyone';
+      const opts = h('div', { class: 'chips' });
+      const paint = (v) => { clear(opts); ['everyone', 'followers'].forEach((k) => opts.append(h('button', { class: 'chip' + (v === k ? ' on' : ''), onclick: async () => {
+        try { await sb.from('profiles').update({ story_default: k }).eq('id', state.me.id); state.me.story_default = k; paint(k); toast('تم الحفظ', 'ok'); } catch (e) { toast(e.message, 'err'); } } }, VIS_LABEL[k]))); };
+      paint(cur === 'custom' ? 'everyone' : cur);
+      const hideRow = h('button', { class: 'menu-item', onclick: async () => {
+        try {
+          const old = new Set((await sb.from('story_hide_from').select('user_id').eq('owner_id', state.me.id)).map((r) => r.user_id));
+          const chosen = await pickPeople('إخفاء حالاتي عن', old); if (!chosen) return;
+          const add = [...chosen].filter((x) => !old.has(x)), del = [...old].filter((x) => !chosen.has(x));
+          if (add.length) await sb.from('story_hide_from').insert(add.map((u) => ({ owner_id: state.me.id, user_id: u })));
+          for (const u of del) await sb.from('story_hide_from').delete().eq('owner_id', state.me.id).eq('user_id', u);
+          toast(`تم الحفظ (${chosen.size} مخفي عنهم)`, 'ok');
+        } catch (e) { toast(e.message, 'err'); }
+      } }, icon('block', 20), 'إخفاء حالاتي عن أشخاص محددين');
+      body.append(h('p', { class: 'muted small' }, 'الخصوصية الافتراضية للحالات الجديدة. يمكنك تغييرها لكل حالة عند النشر. المشاهدات والإعجابات تظهر لك أنت فقط.'), opts, hideRow);
+    });
+  }
 
   async function blockedSheet() {
     sheet('المحظورون', async (body) => {
@@ -51,6 +74,7 @@ export async function settingsPage(root, params, ctx) {
     h('div', { class: 'card-list' },
       row('edit', 'تعديل الملف الشخصي', 'الاسم والنبذة والصورة', null, () => editProfileSheet(() => ctx.rerender())),
       row('lock', 'حساب خاص', 'فقط من تتابعهم يرون منشوراتك', sw(state.me.is_private, async (v) => { await sb.from('profiles').update({ is_private: v }).eq('id', state.me.id); state.me.is_private = v; })),
+      row('eye', 'خصوصية الحالات', 'من يرى حالاتك ومن تُخفى عنه', null, storyPrivacySheet),
       row('block', 'المحظورون', 'إدارة قائمة الحظر', null, blockedSheet),
       row('shield', 'تغيير كلمة المرور', null, null, passwordSheet)),
     state.perms.length ? h('h4', { class: 'sec' }, 'الإدارة') : null,
