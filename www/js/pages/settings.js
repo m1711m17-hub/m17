@@ -1,6 +1,7 @@
 import { h, icon, avatar, clear, toast, sheet, confirmBox } from '../lib/dom.js';
 import { sb, state, loadMe, PROFILE_MINI } from '../api.js';
 import { headerBar } from './home.js';
+import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
 
 export async function settingsPage(root, params, ctx) {
@@ -58,9 +59,19 @@ export async function settingsPage(root, params, ctx) {
   // offer owner activation only while no owner exists
   try { if (state.me.role !== 'OWNER' && !(await sb.rpc('owner_exists'))) box.append(h('div', { class: 'card-list' }, row('shield', 'تفعيل حساب المالك', 'لديك رمز المالك؟', null, claimSheet))); } catch {}
 
+  box.append(h('h4', { class: 'sec' }, 'الإشعارات'), h('div', { class: 'card-list' },
+    row('bell', 'اختبار الإشعارات', 'يرسل إشعاراً حقيقياً إلى هذا الجهاز', null, async () => {
+      if (!pushSupported()) return toast('إشعارات Push تعمل داخل تطبيق Android فقط', 'err');
+      await initPush();
+      if (pushStatus.perm !== 'granted') return toast('صلاحية الإشعارات غير ممنوحة. فعّلها من إعدادات الهاتف ← التطبيقات ← M17 ← الإشعارات', 'err');
+      if (pushStatus.error) return toast(pushStatus.error, 'err');
+      await new Promise((r) => setTimeout(r, 1500));
+      try { const r = await sb.rpc('send_test_push'); toast(r?.ok ? 'أُرسل إشعار تجريبي، انتظر ثوانٍ قليلة' : 'لم يُسجَّل هذا الجهاز بعد، أعد المحاولة بعد لحظات', r?.ok ? 'ok' : 'err'); } catch (e) { toast(e.message, 'err'); }
+    })));
+
   box.append(h('h4', { class: 'sec' }, 'الجلسة'),
     h('div', { class: 'card-list' },
-      row('logout', 'تسجيل الخروج', null, null, async () => { await sb.auth.signOut(); ctx.rerender(); }),
+      row('logout', 'تسجيل الخروج', null, null, async () => { await dropPushToken(); await sb.auth.signOut(); ctx.rerender(); }),
       row('trash', 'حذف حسابي نهائياً', 'يحذف منشوراتك ورسائلك ولا يمكن التراجع', null, async () => {
         if (state.me.role === 'OWNER') return toast('لا يمكن حذف حساب المالك من التطبيق', 'err');
         if (!(await confirmBox('سيُحذف حسابك وكل بياناتك نهائياً. هل أنت متأكد؟', 'حذف الحساب', true))) return;

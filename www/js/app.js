@@ -1,4 +1,5 @@
 import { h, icon, clear, toast } from './lib/dom.js';
+import { initPush } from './push.js';
 import { sb, state, loadMe, refreshBadges } from './api.js';
 import { POLL_BADGE_MS } from './config.js';
 import { authPage } from './pages/auth.js';
@@ -83,6 +84,7 @@ async function boot() {
   if (!location.hash || location.hash === '#/') location.hash = '#/home';
   await route();
   refreshBadges();
+  initPush();
   badgeTimer = setInterval(() => { if (!document.hidden) refreshBadges(); }, POLL_BADGE_MS);
 }
 
