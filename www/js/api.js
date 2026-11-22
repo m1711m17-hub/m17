@@ -1,5 +1,6 @@
 import { createClient } from './lib/supabase-lite.js';
 import { SUPABASE_URL, SUPABASE_KEY, LOGIN_DOMAIN } from './config.js';
+import { createRealtime } from './lib/realtime.js';
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, LOGIN_DOMAIN);
 export const state = { me: null, perms: [], flags: {}, unreadNotifs: 0, unreadChats: 0 };
@@ -86,3 +87,37 @@ export async function refreshBadges() {
     document.dispatchEvent(new CustomEvent('m17:badges'));
   } catch { /* offline - keep old badges */ }
 }
+
+// ---- realtime (instant messages / notifications / typing) with REST polling as fallback ----
+export const bus = new EventTarget();
+export const emit = (name, detail) => bus.dispatchEvent(new CustomEvent(name, { detail }));
+export let rt = null;
+let inbox = null;
+export function startRealtime() {
+  if (rt || !state.me) return;
+  const me = state.me.id;
+  rt = createRealtime({ url: SUPABASE_URL, key: SUPABASE_KEY, getToken: () => sb.session?.access_token });
+  inbox = rt.channel('inbox-' + me, { pg: [
+    { event: 'INSERT', table: 'messages', filter: `receiver_id=eq.${me}` },
+    { event: 'UPDATE', table: 'messages', filter: `sender_id=eq.${me}` },
+    { event: 'INSERT', table: 'notifications', filter: `user_id=eq.${me}` },
+    { event: 'INSERT', table: 'calls', filter: `callee_id=eq.${me}` },
+    { event: 'UPDATE', table: 'calls', filter: `caller_id=eq.${me}` },
+    { event: 'UPDATE', table: 'calls', filter: `callee_id=eq.${me}` },
+    { event: 'INSERT', table: 'call_signals', filter: `to_id=eq.${me}` },
+  ] })
+    .onPg('INSERT', 'messages', (d) => emit('rt:message', d.record))
+    .onPg('UPDATE', 'messages', (d) => emit('rt:message-update', d.record))
+    .onPg('INSERT', 'notifications', (d) => emit('rt:notification', d.record))
+    .onPg('INSERT', 'calls', (d) => emit('rt:call', d.record))
+    .onPg('UPDATE', 'calls', (d) => emit('rt:call-update', d.record))
+    .onPg('INSERT', 'call_signals', (d) => emit('rt:signal', d.record))
+    .onReady(() => emit('rt:ready')).subscribe();
+  rt.onStatus((s) => emit('rt:status', s));
+  rt.connect();
+}
+export function stopRealtime() { try { rt?.disconnect(); } catch {} rt = null; inbox = null; }
+export const rtLive = () => !!(rt && rt.status === 'connected' && inbox?.ready);
+export const pairName = (a, b) => 'chat-' + [a, b].sort().join('_');
+export const touchPresence = () => sb.rpc('touch_presence').catch(() => {});
+export async function presenceOf(id) { try { return (await sb.rpc('get_presence', { ids: [id] }))?.[0] || null; } catch { return null; } }

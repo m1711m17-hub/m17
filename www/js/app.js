@@ -1,6 +1,6 @@
 import { h, icon, clear, toast } from './lib/dom.js';
 import { initPush } from './push.js';
-import { sb, state, loadMe, refreshBadges } from './api.js';
+import { sb, state, loadMe, refreshBadges, bus, emit, rt, startRealtime, stopRealtime, touchPresence, PROFILE_MINI } from './api.js';
 import { POLL_BADGE_MS } from './config.js';
 import { authPage } from './pages/auth.js';
 import { homePage } from './pages/home.js';
@@ -47,6 +47,7 @@ async function route() {
   if (!state.me || !root.querySelector('.shell')) return;
   const my = ++nav;
   const { path, q } = parseHash();
+  try { localStorage.setItem('m17.route', JSON.stringify({ h: location.hash, t: Date.now() })); } catch {}
   let match = null;
   for (const [re, tab, fn, names] of ROUTES) { const m = path.match(re); if (m) { match = { tab, fn, params: Object.fromEntries((names || []).map((n, i) => [n, m[i + 1]])) }; break; } }
   if (!match) { location.replace('#/home'); return; }
@@ -67,8 +68,17 @@ async function route() {
   }
 }
 
+// After the Android WebView is recreated (memory pressure, returning from the camera/gallery...) come back to where the user was.
+function restoreRoute() {
+  try {
+    const r = JSON.parse(localStorage.getItem('m17.route') || 'null');
+    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|u\/|post\/|messages|explore|profile|notifications|settings)/.test(r.h)) return r.h;
+  } catch {}
+  return null;
+}
+
 async function boot() {
-  clearInterval(badgeTimer); cleanup?.(); cleanup = null; nav++;
+  stopRealtime(); clearInterval(badgeTimer); cleanup?.(); cleanup = null; nav++;
   let err = '';
   try { if (sb.session) await loadMe(); } catch (e) { err = e.message; state.me = null; }
   document.getElementById('splash')?.remove();
@@ -81,14 +91,46 @@ async function boot() {
   clear(root);
   tabbar = buildTabbar();
   root.append(h('div', { class: 'shell' }, tabbar));
-  if (!location.hash || location.hash === '#/') location.hash = '#/home';
+  if (!location.hash || location.hash === '#/') location.hash = restoreRoute() || '#/home';
   await route();
   refreshBadges();
   initPush();
+  startRealtime(); touchPresence();
   badgeTimer = setInterval(() => { if (!document.hidden) refreshBadges(); }, POLL_BADGE_MS);
 }
 
 window.addEventListener('hashchange', route);
-sb.onAuth((s) => { if (!s && state.me) { state.me = null; boot(); } });
+sb.onAuth((s) => { if (!s && state.me) { state.me = null; stopRealtime(); boot(); } });
+
+// presence heartbeat + app resume
+setInterval(() => { if (!document.hidden && state.me) touchPresence(); }, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !state.me) return;
+  touchPresence(); refreshBadges(); emit('m17:resume'); rt?.reconnectNow();
+});
+window.addEventListener('online', () => { rt?.reconnectNow(); emit('m17:resume'); });
+
+// in-app banner for new messages / notifications while not looking at that chat
+const nameCache = new Map();
+async function senderOf(id) { if (!nameCache.has(id)) { try { nameCache.set(id, await sb.from('profiles').select(PROFILE_MINI).eq('id', id).one()); } catch { return null; } } return nameCache.get(id); }
+bus.addEventListener('rt:message', async (e) => {
+  const m = e.detail; refreshBadges(); if (!m || document.hidden) return;
+  const p = await senderOf(m.sender_id); if (!p) return;
+  if (location.hash === '#/chat/' + p.username) return;
+  const txt = m.audio_url ? '🎙️ رسالة صوتية' : m.sticker ? '🙂 ملصق' : m.media_url ? (m.media_type === 'video' ? '🎬 فيديو' : '🖼️ صورة') : (m.body || '').slice(0, 60);
+  toast(`💬 ${p.display_name || p.username}: ${txt}`);
+});
+bus.addEventListener('rt:notification', () => refreshBadges());
+
+// Android hardware back button: close overlays first, then navigate, never just kill the app
+const CapApp = window.Capacitor?.Plugins?.App;
+CapApp?.addListener?.('backButton', () => {
+  const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
+  const ov = document.querySelector('.cam-screen,.call-screen,.lightbox,.sheet-back'); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
+  const path = parseHash().path;
+  if (/^\/(chat\/|u\/|post\/|settings|admin|compose|notifications)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
+  if (path !== '/home') { location.hash = '#/home'; return; }
+  CapApp.minimizeApp?.();
+});
 window.addEventListener('unhandledrejection', (e) => { if (e.reason && e.reason.message) console.warn(e.reason); });
 boot();
