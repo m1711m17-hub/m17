@@ -2,6 +2,7 @@ import { h, icon, avatar, clear, toast, sheet, actionSheet, confirmBox, badge, c
 import { sb, state, enrichPosts, uploadMedia, POST_SELECT, PROFILE_MINI } from '../api.js';
 import { postCard, blockUser, reportDialog } from './postcard.js';
 import { headerBar } from './home.js';
+import { quickComposer } from './quickcompose.js';
 
 export function followButton(p, { small = false, onChange } = {}) {
   const b = h('button', { class: 'btn sm' + (small ? '' : ' lg') });
@@ -98,7 +99,7 @@ export async function profilePage(root, params) {
       actions)));
 
   const postsBox = h('div', { class: 'feed' });
-  box.append(h('h3', { class: 'sec' }, 'المنشورات'), postsBox);
+  box.append(isMe ? quickComposer() : null, h('h3', { class: 'sec' }, 'المنشورات'), postsBox);
   try {
     const rows = await enrichPosts(await sb.from('posts').select(POST_SELECT).eq('author_id', p.id).order('created_at', { ascending: false }).limit(30));
     if (!rows.length) postsBox.append(h('div', { class: 'empty small' }, p.is_private && !isMe && !amFollowing ? h('span', null, icon('lock', 30), h('br'), 'هذا الحساب خاص. تابعه لرؤية منشوراته.') : 'لا توجد منشورات بعد'));

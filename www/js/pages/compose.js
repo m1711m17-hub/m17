@@ -1,6 +1,7 @@
 import { h, icon, clear, toast } from '../lib/dom.js';
 import { sb, state, uploadMedia, feature } from '../api.js';
 import { headerBar } from './home.js';
+import { pending } from './quickcompose.js';
 
 export function composePage(root, params) {
   let mode = params.story ? 'story' : 'post';
@@ -55,5 +56,6 @@ export function composePage(root, params) {
         h('button', { class: 'btn ghost', onclick: () => { fileIn.accept = 'video/*'; fileIn.click(); } }, icon('video', 20), 'فيديو'), fileIn),
       h('p', { class: 'muted small' }, 'الصور حتى 15 ميغابايت، والفيديو حتى 50 ميغابايت.')));
   set(mode);
+  if (pending.file) { file = pending.file; pending.file = null; previewUrl = URL.createObjectURL(file); paintPrev(); }
   return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
 }

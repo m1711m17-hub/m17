@@ -211,3 +211,6 @@ body.in-chat .tabbar{display:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .row.top .input.big{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:none;min-height:130px}
+
+.quick-compose{margin:4px 0 12px}.quick-compose .row{flex-wrap:nowrap}.quick-btn{flex:1;padding:10px 6px;font-size:13px;gap:6px;white-space:nowrap}
+.view{padding-bottom:calc(var(--tab) + var(--safe-b) + 56px)}

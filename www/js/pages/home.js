@@ -2,6 +2,7 @@ import { h, icon, clear, toast } from '../lib/dom.js';
 import { sb, state, enrichPosts, followingIds, POST_SELECT, isStaff } from '../api.js';
 import { postCard } from './postcard.js';
 import { loadStoryGroups, storyBar } from './stories.js';
+import { quickComposer } from './quickcompose.js';
 
 export function headerBar(title, { back = false, right = [] } = {}) {
   return h('header', { class: 'topbar' },
@@ -21,7 +22,7 @@ export async function homePage(root) {
   const storiesBox = h('div');
   const more = h('button', { class: 'btn ghost block', style: { display: 'none' } }, 'عرض المزيد');
   root.append(headerBar(h('span', { class: 'logo-text' }, 'M17'), { right: [isStaff() ? h('button', { class: 'icon-btn', 'aria-label': 'الإدارة', onclick: () => (location.hash = '#/admin') }, icon('shield', 23)) : null, bellButton()] }),
-    h('div', { class: 'page' }, storiesBox, feed, more));
+    h('div', { class: 'page' }, quickComposer(), storiesBox, feed, more));
   let ids = [], before = null, loading = false;
   const PAGE = 15;
 
