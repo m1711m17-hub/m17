@@ -7,11 +7,14 @@
   --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--text);font-family:'Tajawal',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.55;overscroll-behavior-y:none}
-body{min-height:100dvh;background:
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Tajawal',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.55;overscroll-behavior-y:contain}
+html{-webkit-text-size-adjust:100%}
+body{min-height:100dvh;overflow-x:clip;background:var(--bg)}
+/* decorative glow lives on a fixed pseudo-layer so it never interferes with touch scrolling */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
   radial-gradient(900px 500px at 85% -10%,rgba(47,107,255,.22),transparent 60%),
   radial-gradient(700px 420px at -10% 10%,rgba(139,92,246,.18),transparent 60%),
-  radial-gradient(600px 400px at 50% 110%,rgba(34,224,255,.10),transparent 60%),var(--bg);background-attachment:fixed}
+  radial-gradient(600px 400px at 50% 110%,rgba(34,224,255,.10),transparent 60%)}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
 input,textarea{font:inherit;color:inherit}
@@ -26,8 +29,8 @@ h3,h4,p{margin:0}
 .brand-mark{font-weight:800;font-size:3.2rem;letter-spacing:2px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px rgba(47,155,255,.55));direction:ltr}
 
 /* ---------- shell ---------- */
-.shell{min-height:100dvh}
-.view{min-height:100dvh;padding-bottom:calc(var(--tab) + var(--safe-b) + 24px)}
+.shell{min-height:100dvh;overflow-x:clip}
+.view{min-height:100dvh;padding-bottom:calc(var(--tab) + var(--safe-b) + 84px)}
 .view.enter{animation:enter .28s ease both}
 @keyframes enter{from{opacity:0;transform:translateY(10px)}}
 .page{padding:12px 14px;max-width:640px;margin:0 auto}
@@ -149,7 +152,7 @@ body.in-chat .tabbar{display:none}
 .toast.ok{border-color:rgba(47,227,163,.5)}.toast.err{border-color:rgba(255,77,109,.6)}.toast.out{opacity:0;transition:.3s}
 
 /* ---------- auth ---------- */
-.auth{overflow:hidden;min-height:100dvh;padding:calc(48px + var(--safe-t)) 22px 30px;max-width:440px;margin:0 auto;position:relative;display:flex;flex-direction:column;justify-content:center}
+.auth{overflow:clip;min-height:100dvh;padding:calc(48px + var(--safe-t)) 22px 30px;max-width:440px;margin:0 auto;position:relative;display:flex;flex-direction:column;justify-content:center}
 .auth-glow{position:absolute;inset:-20% 0 auto;height:360px;background:radial-gradient(closest-side,rgba(47,107,255,.35),transparent);pointer-events:none;filter:blur(20px)}
 .brand{text-align:center;margin-bottom:28px;position:relative}.brand .brand-mark{font-size:4.2rem}.brand p{color:var(--muted);margin-top:4px}
 .auth-form{position:relative}
@@ -213,4 +216,3 @@ body.in-chat .tabbar{display:none}
 .row.top .input.big{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:none;min-height:130px}
 
 .quick-compose{margin:4px 0 12px}.quick-compose .row{flex-wrap:nowrap}.quick-btn{flex:1;padding:10px 6px;font-size:13px;gap:6px;white-space:nowrap}
-.view{padding-bottom:calc(var(--tab) + var(--safe-b) + 56px)}
