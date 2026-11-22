@@ -114,7 +114,7 @@ export function openViewer(groups, gi, onChange) {
     let stage;
     if (s.kind === 'text') {
       stage = h('div', { class: 'sv-text', style: { background: bgCss(s.bg) } }, h('div', null, s.text_content));
-      begin(Math.min(10000, 4500 + (s.text_content || '').length * 60));
+      setTimeout(() => begin(Math.min(10000, 4500 + (s.text_content || '').length * 60)), 0); // after the DOM is attached
     } else if (s.media_type === 'video') {
       media = h('video', { src: s.media_url, autoplay: true, playsinline: true });
       media.onloadedmetadata = () => begin(Math.min(30000, (media.duration || 8) * 1000));
@@ -159,7 +159,7 @@ export function openViewer(groups, gi, onChange) {
           try {
             await sb.from('stories').delete().eq('id', s.id); toast('تم حذف الحالة', 'ok');
             grp.items.splice(i, 1);
-            if (!grp.items.length) { groups.splice(g, 1); if (!groups.length) return close(); g = Math.min(g, groups.length - 1); i = 0; } else i = Math.min(i, grp.items.length - 1);
+            if (!grp.items.length) { groups.splice(g, 1); return close(); } i = Math.min(i, grp.items.length - 1);
             onChange?.(); show();
           } catch (e) { toast(e.message, 'err'); resume(); }
         } }, icon('trash', 18)));

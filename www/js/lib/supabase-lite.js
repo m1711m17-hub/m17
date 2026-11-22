@@ -139,6 +139,8 @@ export function createClient(url, key, loginDomain) {
       return Number.isFinite(n) ? n : 0;
     }
     then(res, rej) { return this.exec().then(res, rej); }
+    catch(rej) { return this.exec().catch(rej); }
+    finally(fn) { return this.exec().finally(fn); }
   }
 
   return {

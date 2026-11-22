@@ -266,3 +266,4 @@ body.in-chat .tabbar{display:none}
 .music-box .row{gap:8px}.music-ico{width:36px;height:36px;border-radius:12px;background:var(--grad);display:grid;place-items:center;flex:none}
 .vis-box{display:flex;flex-direction:column;gap:8px}
 .check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:transparent;flex:none}.check.on{background:var(--grad);border-color:transparent;color:#fff}
+.sheet-back.center{z-index:130}
