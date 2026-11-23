@@ -327,3 +327,29 @@ body.in-chat .tabbar{display:none}
 .cam-pv-media img,.cam-pv-media video{max-width:100%;max-height:100%}
 .cam-pv-bar{display:flex;gap:10px;justify-content:space-between;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px))}
 [hidden]{display:none!important}
+/* ===== calls ===== */
+.call-screen{position:fixed;inset:0;z-index:125;background:radial-gradient(circle at 50% 20%,#1b2a6b,#0a0f24 70%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;direction:rtl;animation:csin .25s ease}
+@keyframes csin{from{opacity:0;transform:scale(1.03)}}
+.cs-remote{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;opacity:0;pointer-events:none}
+.call-screen.audio .cs-remote{width:1px;height:1px}
+.call-screen.has-video .cs-remote{opacity:1}
+.cs-local{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:14px;width:96px;height:136px;object-fit:cover;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:#000;z-index:3}
+.cs-local.mirror{transform:scaleX(-1)}
+.cs-local[hidden]{display:none}
+.cs-info{position:relative;z-index:2;margin-top:15vh;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.cs-info h2{margin:6px 0 0;font-size:1.5rem}
+.cs-av{border-radius:50%;box-shadow:0 0 0 8px rgba(255,255,255,.08),0 0 0 18px rgba(255,255,255,.04)}
+.call-screen:not(.connected) .cs-av{animation:cspulse 1.6s infinite}
+@keyframes cspulse{50%{box-shadow:0 0 0 14px rgba(47,107,255,.25),0 0 0 30px rgba(47,107,255,.08)}}
+.call-screen.has-video .cs-av{display:none}
+.call-screen.has-video .cs-info{margin-top:calc(14px + env(safe-area-inset-top,0px));align-self:flex-start;margin-right:14px;align-items:flex-start}
+.call-screen.has-video .cs-info h2{font-size:1.1rem}
+.cs-status{font-size:1rem;opacity:.9;direction:ltr;unicode-bidi:plaintext}
+.cs-flags{display:flex;flex-direction:column;gap:4px;font-size:.8rem;opacity:.9}
+.cs-controls{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:18px 14px calc(30px + env(safe-area-inset-bottom,0px));width:100%;background:linear-gradient(transparent,rgba(0,0,0,.45))}
+.cs-btn{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;color:#fff;font-size:.7rem;cursor:pointer;min-width:64px}
+.cs-btn svg{box-sizing:content-box;padding:15px;border-radius:50%;background:rgba(255,255,255,.16)}
+.cs-btn.on svg{background:#fff;color:#111}
+.cs-btn.reject svg{background:#e0243f}.cs-btn.accept svg{background:#1fbf5b}
+.cs-btn:active svg{transform:scale(.92)}
+.call-row.missed .cl-sub{color:#ff5470}

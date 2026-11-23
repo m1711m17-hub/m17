@@ -12,6 +12,7 @@ import { profilePage } from './pages/profile.js';
 import { settingsPage } from './pages/settings.js';
 import { adminPage } from './pages/admin.js';
 import { postPage } from './pages/postpage.js';
+import { callsPage, initCalls, stopCalls } from './pages/calls.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -19,7 +20,7 @@ const ROUTES = [
   [/^\/messages$/, 'messages', messagesPage], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
   [/^\/notifications$/, 'none', notificationsPage], [/^\/profile$/, 'profile', profilePage],
   [/^\/u\/([a-z0-9_]+)$/, 'profile', profilePage, ['username']], [/^\/settings$/, 'profile', settingsPage],
-  [/^\/admin$/, 'profile', adminPage], [/^\/post\/([0-9a-f-]{36})$/, 'none', postPage, ['id']],
+  [/^\/admin$/, 'profile', adminPage], [/^\/calls$/, 'messages', callsPage], [/^\/post\/([0-9a-f-]{36})$/, 'none', postPage, ['id']],
 ];
 let view = null, cleanup = null, nav = 0, tabbar = null, badgeTimer = null;
 const ctx = { rerender: () => boot() };
@@ -95,12 +96,12 @@ async function boot() {
   await route();
   refreshBadges();
   initPush();
-  startRealtime(); touchPresence();
+  startRealtime(); initCalls(); touchPresence();
   badgeTimer = setInterval(() => { if (!document.hidden) refreshBadges(); }, POLL_BADGE_MS);
 }
 
 window.addEventListener('hashchange', route);
-sb.onAuth((s) => { if (!s && state.me) { state.me = null; stopRealtime(); boot(); } });
+sb.onAuth((s) => { if (!s && state.me) { stopCalls(); state.me = null; stopRealtime(); boot(); } });
 
 // presence heartbeat + app resume
 setInterval(() => { if (!document.hidden && state.me) touchPresence(); }, 30000);
@@ -128,7 +129,7 @@ CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
   const ov = document.querySelector('.cam-screen,.call-screen,.lightbox,.sheet-back'); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
-  if (/^\/(chat\/|u\/|post\/|settings|admin|compose|notifications)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
+  if (/^\/(chat\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
   CapApp.minimizeApp?.();
 });

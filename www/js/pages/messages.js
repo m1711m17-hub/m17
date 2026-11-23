@@ -7,6 +7,7 @@ import { blockUser, reportDialog, viewImage } from './postcard.js';
 import { createRecorder, recorderSupported, voiceBubble, fmtDur, decodeWave } from '../lib/voice.js';
 import { stickerPanel } from './stickers.js';
 import { openCamera, cameraSupported } from './camera.js';
+import { placeCall } from './calls.js';
 
 function lastText(c) {
   if (c.last_kind === 'audio') return '🎙️ رسالة صوتية';
@@ -18,7 +19,8 @@ function lastText(c) {
 export async function messagesPage(root) {
   const list = h('div', { class: 'card-list' });
   const newBtn = h('button', { class: 'icon-btn', 'aria-label': 'محادثة جديدة', onclick: newChat }, icon('edit', 22));
-  root.append(headerBar('الرسائل', { right: [newBtn, bellButton()] }), h('div', { class: 'page' }, list));
+  const logBtn = h('button', { class: 'icon-btn', 'aria-label': 'سجل المكالمات', onclick: () => (location.hash = '#/calls') }, icon('phone', 22));
+  root.append(headerBar('الرسائل', { right: [logBtn, newBtn, bellButton()] }), h('div', { class: 'page' }, list));
 
   function newChat() {
     sheet('محادثة جديدة', (body, close) => {
@@ -88,6 +90,8 @@ export async function chatPage(root, params) {
   root.append(h('header', { class: 'topbar' },
     h('button', { class: 'icon-btn', type: 'button', onclick: () => (location.hash = '#/messages'), 'aria-label': 'رجوع' }, icon('back', 22)),
     h('a', { class: 'row gap grow', href: `#/u/${peer.username}` }, h('span', { class: 'av-wrap' }, avatar(peer, 38), h('i', { class: 'online-dot', hidden: true })), h('div', { class: 'grow' }, h('b', null, peer.display_name || peer.username), statusEl)),
+    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'اتصال صوتي', onclick: () => placeCall(peer, 'audio') }, icon('phone', 22)),
+    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'اتصال فيديو', onclick: () => placeCall(peer, 'video') }, icon('video', 22)),
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'المزيد', onclick: () => actionSheet('@' + peer.username, [
       { label: 'عرض الملف الشخصي', icon: 'user', run: () => (location.hash = `#/u/${peer.username}`) },
       { label: 'إبلاغ', icon: 'flag', run: () => reportDialog('user', peer.id) },
