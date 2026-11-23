@@ -356,3 +356,5 @@ body.in-chat .tabbar{display:none}
 
 .brand-logo{width:150px;height:150px;border-radius:32px;box-shadow:0 0 40px rgba(47,155,255,.45);display:block;margin:0 auto}
 #splash .brand-logo{width:130px;height:130px;animation:pulse 1.4s ease-in-out infinite}
+.chat-status.rec{color:#ff5470}.chat-status.sendk{color:#ffb340}.chat-status.incall{color:#b78bff}
+.chat-status.busy .dots i{animation-duration:.9s}

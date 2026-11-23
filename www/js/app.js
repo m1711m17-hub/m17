@@ -1,6 +1,6 @@
 import { h, icon, clear, toast } from './lib/dom.js';
 import { initPush } from './push.js';
-import { sb, state, loadMe, refreshBadges, bus, emit, rt, startRealtime, stopRealtime, touchPresence, PROFILE_MINI } from './api.js';
+import { sb, state, loadMe, refreshBadges, bus, emit, rt, startRealtime, stopRealtime, touchPresence, goOffline, PROFILE_MINI } from './api.js';
 import { POLL_BADGE_MS } from './config.js';
 import { authPage } from './pages/auth.js';
 import { homePage } from './pages/home.js';
@@ -12,7 +12,7 @@ import { profilePage } from './pages/profile.js';
 import { settingsPage } from './pages/settings.js';
 import { adminPage } from './pages/admin.js';
 import { postPage } from './pages/postpage.js';
-import { callsPage, initCalls, stopCalls } from './pages/calls.js';
+import { callsPage, initCalls, stopCalls, inCall } from './pages/calls.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -104,11 +104,15 @@ window.addEventListener('hashchange', route);
 sb.onAuth((s) => { if (!s && state.me) { stopCalls(); state.me = null; stopRealtime(); boot(); } });
 
 // presence heartbeat + app resume
-setInterval(() => { if (!document.hidden && state.me) touchPresence(); }, 30000);
+setInterval(() => { if ((!document.hidden || inCall()) && state.me) touchPresence(); }, 30000);
+let offTimer = null;
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden || !state.me) return;
+  clearTimeout(offTimer);
+  if (document.hidden) { offTimer = setTimeout(() => { if (document.hidden && state.me && !inCall()) goOffline(); }, 3000); return; }
+  if (!state.me) return;
   touchPresence(); refreshBadges(); emit('m17:resume'); rt?.reconnectNow();
 });
+window.addEventListener('pagehide', () => { if (state.me && !inCall()) goOffline(); });
 window.addEventListener('online', () => { rt?.reconnectNow(); emit('m17:resume'); });
 
 // in-app banner for new messages / notifications while not looking at that chat

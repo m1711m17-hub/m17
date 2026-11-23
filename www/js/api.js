@@ -126,5 +126,20 @@ export function startRealtime() {
 export function stopRealtime() { try { rt?.disconnect(); } catch {} rt = null; inbox = null; }
 export const rtLive = () => !!(rt && rt.status === 'connected' && inbox?.ready);
 export const pairName = (a, b) => 'chat-' + [a, b].sort().join('_');
-export const touchPresence = () => sb.rpc('touch_presence').catch(() => {});
+// presence: one heartbeat row per DEVICE (so several phones of one user stay in sync); closing/hiding the app marks this device offline at once
+export const DEVICE = (() => { try { let d = localStorage.getItem('m17.device'); if (!d) { d = 'd' + Math.random().toString(36).slice(2, 10); localStorage.setItem('m17.device', d); } return d; } catch { return 'web'; } })();
+export const touchPresence = () => (state.me && state.me.show_presence !== false ? sb.rpc('touch_presence', { p_device: DEVICE }).catch(() => {}) : Promise.resolve());
+export function goOffline() {
+  const tok = sb.session?.access_token; if (!tok) return;
+  try { fetch(SUPABASE_URL + '/rest/v1/rpc/go_offline', { method: 'POST', keepalive: true, headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify({ p_device: DEVICE }) }).catch(() => {}); } catch {}
+}
 export async function presenceOf(id) { try { return (await sb.rpc('get_presence', { ids: [id] }))?.[0] || null; } catch { return null; } }
+export async function presenceMany(ids) { try { return new Map(((await sb.rpc('get_presence', { ids })) || []).map((p) => [p.user_id, p])); } catch { return new Map(); } }
+// live presence changes (Realtime postgres_changes on `presence`; RLS hides users who turned the setting off / blocked)
+export function watchPresence(ids, fn) {
+  if (!rt || !ids.length) return () => {};
+  const list = ids.slice(0, 100);
+  const ch = rt.channel('pres-' + Math.random().toString(36).slice(2, 8), { pg: [{ event: 'INSERT', table: 'presence', filter: list.length === 1 ? `user_id=eq.${list[0]}` : `user_id=in.(${list.join(',')})` }, { event: 'UPDATE', table: 'presence', filter: list.length === 1 ? `user_id=eq.${list[0]}` : `user_id=in.(${list.join(',')})` }] })
+    .onPg('INSERT', 'presence', (d) => fn(d.record)).onPg('UPDATE', 'presence', (d) => fn(d.record)).subscribe();
+  return () => { try { ch.unsubscribe(); } catch {} };
+}

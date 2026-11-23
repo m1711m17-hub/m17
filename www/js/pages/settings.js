@@ -1,5 +1,5 @@
 import { h, icon, avatar, clear, toast, sheet, confirmBox } from '../lib/dom.js';
-import { sb, state, loadMe, PROFILE_MINI } from '../api.js';
+import { goOffline, touchPresence, sb, state, loadMe, PROFILE_MINI } from '../api.js';
 import { headerBar } from './home.js';
 import { pickPeople } from './people.js';
 import { VIS_LABEL } from './stories.js';
@@ -74,6 +74,7 @@ export async function settingsPage(root, params, ctx) {
     h('div', { class: 'card-list' },
       row('edit', 'تعديل الملف الشخصي', 'الاسم والنبذة والصورة', null, () => editProfileSheet(() => ctx.rerender())),
       row('lock', 'حساب خاص', 'فقط من تتابعهم يرون منشوراتك', sw(state.me.is_private, async (v) => { await sb.from('profiles').update({ is_private: v }).eq('id', state.me.id); state.me.is_private = v; })),
+      row('users', 'حالة الاتصال وآخر ظهور', 'إظهار "متصل الآن" وآخر ظهور. إذا أخفيتها لن ترى حالة الآخرين أيضاً', sw(state.me.show_presence !== false, async (v) => { await sb.from('profiles').update({ show_presence: v }).eq('id', state.me.id); state.me.show_presence = v; if (v) touchPresence(); else goOffline(); })),
       row('eye', 'خصوصية الحالات', 'من يرى حالاتك ومن تُخفى عنه', null, storyPrivacySheet),
       row('block', 'المحظورون', 'إدارة قائمة الحظر', null, blockedSheet),
       row('shield', 'تغيير كلمة المرور', null, null, passwordSheet)),
@@ -95,7 +96,7 @@ export async function settingsPage(root, params, ctx) {
 
   box.append(h('h4', { class: 'sec' }, 'الجلسة'),
     h('div', { class: 'card-list' },
-      row('logout', 'تسجيل الخروج', null, null, async () => { await dropPushToken(); await sb.auth.signOut(); ctx.rerender(); }),
+      row('logout', 'تسجيل الخروج', null, null, async () => { await dropPushToken(); goOffline(); await sb.auth.signOut(); ctx.rerender(); }),
       row('trash', 'حذف حسابي نهائياً', 'يحذف منشوراتك ورسائلك ولا يمكن التراجع', null, async () => {
         if (state.me.role === 'OWNER') return toast('لا يمكن حذف حساب المالك من التطبيق', 'err');
         if (!(await confirmBox('سيُحذف حسابك وكل بياناتك نهائياً. هل أنت متأكد؟', 'حذف الحساب', true))) return;

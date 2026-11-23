@@ -1,5 +1,5 @@
 import { h, icon, avatar, clear, toast, timeAgo, hhmm, dayLabel, sheet, actionSheet } from '../lib/dom.js';
-import { sb, state, uploadMedia, uploadAudio, refreshBadges, PROFILE_MINI, feature, bus, rt, rtLive, pairName, presenceOf } from '../api.js';
+import { sb, state, uploadMedia, uploadAudio, refreshBadges, PROFILE_MINI, feature, bus, rt, rtLive, pairName, presenceOf, presenceMany, watchPresence } from '../api.js';
 import { POLL_CHAT_MS } from '../config.js';
 import { headerBar, bellButton } from './home.js';
 import { userRow } from './explore.js';
@@ -44,6 +44,7 @@ export async function messagesPage(root) {
     }, { full: true });
   }
 
+  let unwatchList = () => {};
   async function load() {
     try {
       const rows = await sb.rpc('my_conversations');
@@ -51,7 +52,8 @@ export async function messagesPage(root) {
       if (!rows.length) list.append(h('div', { class: 'empty' }, icon('chat', 44), h('h3', null, 'لا توجد محادثات'), h('p', null, 'ابدأ محادثة جديدة مع أي مستخدم بالضغط على زر القلم.')));
       let pres = new Map();
       try { (await sb.rpc('get_presence', { ids: rows.map((r) => r.partner_id) }) || []).forEach((p) => pres.set(p.user_id, p)); } catch {}
-      rows.forEach((c) => list.append(h('a', { class: 'user-row conv', href: `#/chat/${c.username}` }, h('span', { class: 'av-wrap' }, avatar(c, 52), pres.get(c.partner_id)?.online ? h('i', { class: 'online-dot' }) : null),
+      unwatchList(); unwatchList = watchPresence(rows.map((r) => r.partner_id), (r) => { const d = list.querySelector(`.online-dot[data-uid="${r.user_id}"]`); if (d) d.hidden = !r.online; });
+      rows.forEach((c) => list.append(h('a', { class: 'user-row conv', href: `#/chat/${c.username}` }, h('span', { class: 'av-wrap' }, avatar(c, 52), h('i', { class: 'online-dot', 'data-uid': c.partner_id, hidden: !pres.get(c.partner_id)?.online })),
         h('div', { class: 'grow' }, h('div', { class: 'row between' }, h('b', null, c.display_name || c.username), h('span', { class: 'muted small' }, timeAgo(c.last_at))),
           h('div', { class: 'row between' }, h('span', { class: 'muted ellipsis' }, (c.last_from_me ? 'أنت: ' : '') + lastText(c)), Number(c.unread_count) ? h('span', { class: 'pill' }, c.unread_count) : null)))));
     } catch (e) { clear(list).append(h('div', { class: 'empty' }, e.message)); }
@@ -60,7 +62,7 @@ export async function messagesPage(root) {
   let t = null; const soon = () => { clearTimeout(t); t = setTimeout(load, 350); };
   ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.addEventListener(e, soon));
   const iv = setInterval(() => { if (!document.hidden) load(); }, rtLive() ? 30000 : 6000);
-  return () => { clearInterval(iv); clearTimeout(t); ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.removeEventListener(e, soon)); };
+  return () => { unwatchList(); clearInterval(iv); clearTimeout(t); ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.removeEventListener(e, soon)); };
 }
 
 export async function chatPage(root, params) {
@@ -77,7 +79,7 @@ export async function chatPage(root, params) {
   const keepFocus = (e) => e.preventDefault(); // pressing a button must not hide the keyboard / blur the field
   const sendBtn = h('button', { class: 'icon-btn accent', type: 'button', 'aria-label': 'إرسال', onpointerdown: keepFocus }, icon('send', 22));
   const attach = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إرفاق من المعرض', onclick: () => fileIn.click() }, icon('image', 22));
-  const camBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'الكاميرا', onclick: () => openCamera({ onSend: async (f) => { toast('جارٍ الرفع...'); const m = await uploadMedia('chat', f); await send({ media_url: m.url, media_type: m.type }); } }) }, icon('camera', 22));
+  const camBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'الكاميرا', onclick: () => openCamera({ onSend: async (f) => { toast('جارٍ الرفع...'); const m = await whileSending(f.type.startsWith('video') ? 'video' : 'image', () => uploadMedia('chat', f)); await send({ media_url: m.url, media_type: m.type }); } }) }, icon('camera', 22));
   const stickBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'ملصقات', onpointerdown: keepFocus, onclick: () => { input.blur(); panel.toggle(); stickBtn.classList.toggle('on', panel.isOpen); } }, icon('smile', 22));
   const panel = stickerPanel({ onPick: (st) => { panel.close(); stickBtn.classList.remove('on'); send({ sticker: `${st.emoji}|${st.label}|${st.color}` }); } });
   const micBtn = h('button', { class: 'icon-btn accent mic', type: 'button', 'aria-label': 'تسجيل رسالة صوتية (اضغط مطولاً)' }, icon('mic', 22));
@@ -102,23 +104,26 @@ export async function chatPage(root, params) {
     chatBar = h('div', { class: 'chat-bar' }, attach, cameraSupported() ? camBtn : null, stickBtn, input, sendBtn, micBtn, recBar, fileIn));
 
   // ---- status line: typing / recording / online / last seen ----
+  const KINDS = { typing: ['typing', 'يكتب الآن'], recording: ['rec', '🎙️ يسجل مقطعاً صوتياً'], image: ['sendk', '📷 يرسل صورة'], video: ['sendk', '🎬 يرسل فيديو'], sending: ['sendk', 'يرسل رسالة'] };
   function paintStatus() {
     const dot = root.querySelector('.topbar .online-dot');
-    if (peerKind === 'typing' || peerKind === 'recording') {
-      statusEl.className = 'chat-status small typing'; statusEl.textContent = peerKind === 'typing' ? 'يكتب الآن' : '🎙️ يسجّل رسالة صوتية';
+    if (KINDS[peerKind]) {
+      statusEl.className = 'chat-status small busy ' + KINDS[peerKind][0]; statusEl.textContent = KINDS[peerKind][1];
       statusEl.append(h('span', { class: 'dots' }, h('i'), h('i'), h('i'))); if (dot) dot.hidden = false; return;
     }
+    if (pres?.online && pres.in_call) { statusEl.className = 'chat-status small incall'; statusEl.textContent = pres.in_call === 'video' ? '📹 داخل مكالمة فيديو' : '📞 داخل مكالمة صوتية'; if (dot) dot.hidden = false; return; }
     if (pres?.online) { statusEl.className = 'chat-status small online'; statusEl.textContent = 'متصل الآن'; if (dot) dot.hidden = false; return; }
     if (dot) dot.hidden = true;
     statusEl.className = 'chat-status muted small';
     statusEl.textContent = pres?.last_seen ? 'آخر ظهور ' + timeAgo(pres.last_seen) : '@' + peer.username;
   }
   function setPeerKind(k) {
-    clearTimeout(peerKindTimer); peerKind = k === 'typing' || k === 'recording' ? k : 'idle'; paintStatus();
+    clearTimeout(peerKindTimer); peerKind = KINDS[k] ? k : 'idle'; paintStatus();
     if (peerKind !== 'idle') peerKindTimer = setTimeout(() => { peerKind = 'idle'; paintStatus(); }, 6000); // auto-clear if the "idle" signal is lost
   }
   async function refreshPresence() { pres = await presenceOf(peer.id); paintStatus(); }
   paintStatus();
+  const unwatch = watchPresence([peer.id], (r) => { if (r && r.user_id === peer.id) { pres = { ...(pres || {}), online: !!r.online, last_seen: r.last_seen, in_call: r.in_call }; paintStatus(); } });
 
   // ---- my status broadcast (instant via Realtime, RPC fallback) ----
   const chan = rt ? rt.channel(pairName(state.me.id, peer.id)).onBroadcast('status', (p) => { if (p?.from === peer.id) setPeerKind(p.kind); }).subscribe() : null;
@@ -130,6 +135,7 @@ export async function chatPage(root, params) {
     if (chan && chan.joined) chan.broadcast('status', { from: state.me.id, kind });
     if (!rtLive()) sb.rpc('set_chat_status', { peer: peer.id, k: kind }).catch(() => {});
   }
+  async function whileSending(kind, fn) { sendStatus(kind); const t = setInterval(() => sendStatus(kind), 2600); try { return await fn(); } finally { clearInterval(t); sendStatus('idle'); } }
   let idleTimer = null;
   const typingPulse = () => { sendStatus('typing'); clearTimeout(idleTimer); idleTimer = setTimeout(() => sendStatus('idle'), 3500); };
 
@@ -182,12 +188,13 @@ export async function chatPage(root, params) {
     const tmp = bubble({ id: 'tmp' + Date.now() + Math.random(), sender_id: state.me.id, body, ...extra, created_at: new Date().toISOString() }, true);
     tmp.classList.add('tmp'); msgs.append(tmp); msgs.scrollTop = msgs.scrollHeight;
     if (!noText) { input.value = ''; input.style.height = ''; draftSet(''); syncBtn(); }
-    clearTimeout(idleTimer); sendStatus('idle');
+    clearTimeout(idleTimer); sendStatus('sending');
     try {
       const real = resolve ? await resolve() : extra;
       await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: peer.id, body, ...real });
       await poll(); msgs.scrollTop = msgs.scrollHeight;
     } catch (e) { tmp.remove(); if (body) { input.value = body; draftSet(body); syncBtn(); } toast(e.message, 'err'); }
+    sendStatus('idle');
     if (!noText && !extra.media_url) input.focus({ preventScroll: true });
   }
   function syncBtn() { const has = input.value.trim().length > 0, can = recorderSupported(); sendBtn.hidden = !has && can; micBtn.hidden = has || !can; }
@@ -258,12 +265,12 @@ export async function chatPage(root, params) {
   window.addEventListener('pagehide', saveDraftNow);
   fileIn.onchange = async () => {
     const f = fileIn.files[0]; fileIn.value = ''; if (!f) return;
-    try { toast('جارٍ رفع الملف...'); const m = await uploadMedia('chat', f); await send({ media_url: m.url, media_type: m.type }); } catch (e) { toast(e.message, 'err'); }
+    try { toast('جارٍ رفع الملف...'); const m = await whileSending(f.type.startsWith('video') ? 'video' : 'image', () => uploadMedia('chat', f)); await send({ media_url: m.url, media_type: m.type }); } catch (e) { toast(e.message, 'err'); }
   };
   const saved = draftGet(); if (saved) { input.value = saved; input.style.height = Math.min(120, input.scrollHeight) + 'px'; syncBtn(); }
 
   // ---- live updates ----
-  const onMsg = (e) => { const m = e.detail; if (m && m.sender_id === peer.id) { addMsgs([m]); setPeerKind('idle'); markRead(); pres = { ...(pres || {}), online: true, last_seen: new Date().toISOString() }; paintStatus(); } };
+  const onMsg = (e) => { const m = e.detail; if (m && m.sender_id === peer.id) { addMsgs([m]); setPeerKind('idle'); markRead(); } };
   const onUpd = (e) => { const m = e.detail; if (m && m.receiver_id === peer.id) addMsgs([m]); };
   const onCatchUp = () => { poll(); refreshPresence(); };
   bus.addEventListener('rt:message', onMsg); bus.addEventListener('rt:message-update', onUpd);
@@ -273,7 +280,7 @@ export async function chatPage(root, params) {
   const iv = setInterval(() => { if (document.hidden) return; n++; if (!rtLive() || n % 7 === 0) poll(); if (n % 6 === 0) refreshPresence(); }, POLL_CHAT_MS);
   return () => {
     stop = true; try { rec?.cancel(); } catch {} clearInterval(rtick); clearInterval(rstat); clearInterval(iv); clearTimeout(idleTimer); clearTimeout(peerKindTimer); clearTimeout(draftTimer);
-    saveDraftNow(); sendStatus('idle'); chan?.unsubscribe();
+    saveDraftNow(); sendStatus('idle'); chan?.unsubscribe(); unwatch();
     window.removeEventListener('pagehide', saveDraftNow);
     bus.removeEventListener('rt:message', onMsg); bus.removeEventListener('rt:message-update', onUpd);
     ['rt:ready', 'm17:resume'].forEach((x) => bus.removeEventListener(x, onCatchUp));
