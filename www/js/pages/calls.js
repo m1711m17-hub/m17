@@ -179,7 +179,7 @@ function finish(s, text) {
 const ctlBtn = (cls, label, ic, fn, on) => h('button', { class: 'cs-btn ' + cls + (on ? ' on' : ''), type: 'button', 'aria-label': label, onclick: fn }, icon(ic, 26), h('span', null, label));
 function mountUI(s) {
   const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true });
-  const local = h('video', { class: 'cs-local', playsinline: true, muted: true, autoplay: true });
+  const local = h('video', { class: 'cs-local', playsinline: true, autoplay: true }); local.muted = true; local.volume = 0;
   const name = h('h2', null, s.peer.display_name || s.peer.username), status = h('div', { class: 'cs-status' }), flags = h('div', { class: 'cs-flags' });
   const info = h('div', { class: 'cs-info' }, h('div', { class: 'cs-av' }, avatar(s.peer, 120)), name, status, flags);
   const controls = h('div', { class: 'cs-controls' });
@@ -204,7 +204,7 @@ async function toggleCam(s) {
   if (s.kind !== 'video' || !s.vSender) return;
   try {
     if (s.camOn) { const t = s.local.getVideoTracks()[0]; t?.stop(); if (t) s.local.removeTrack(t); await s.vSender.replaceTrack(null); s.camOn = false; }
-    else { const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: s.facing, width: { ideal: 640 }, height: { ideal: 480 } } }); const t = ns.getVideoTracks()[0]; s.local.addTrack(t); await s.vSender.replaceTrack(t); s.camOn = true; }
+    else { const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: s.facing, width: { ideal: 640 }, height: { ideal: 480 } } }); const t = ns.getVideoTracks()[0]; s.local.addTrack(t); await s.vSender.replaceTrack(t); s.camOn = true; s.ui.local.srcObject = null; }
     sendCtl(s); paint(s);
   } catch { toast('تعذّر تشغيل الكاميرا', 'err'); }
 }
@@ -225,7 +225,7 @@ function paint(s) {
   u.flags.replaceChildren(...[s.peerMuted && connected ? h('span', null, icon('micoff', 16), ' الطرف الآخر كتم الصوت') : null, s.kind === 'video' && connected && !s.peerCam ? h('span', null, icon('videooff', 16), ' أغلق الكاميرا') : null].filter(Boolean));
   const remoteVideoLive = s.kind === 'video' && connected && s.peerCam && s.remote.getVideoTracks().length > 0;
   u.el.classList.toggle('has-video', remoteVideoLive); u.el.classList.toggle('connected', connected);
-  if (s.local && s.kind === 'video' && s.camOn) { if (u.local.srcObject !== s.local) { u.local.srcObject = s.local; u.local.play?.().catch(() => {}); } u.local.hidden = false; u.local.classList.toggle('mirror', s.facing === 'user'); } else u.local.hidden = true;
+  if (s.local && s.kind === 'video' && s.camOn) { if (!u.local.srcObject) { u.local.srcObject = new MediaStream(s.local.getVideoTracks()); u.local.muted = true; u.local.play?.().catch(() => {}); } u.local.hidden = false; u.local.classList.toggle('mirror', s.facing === 'user'); } else u.local.hidden = true;
   const c = []; const ended = s.ended;
   if (!ended) {
     if (s.status === 'ringing') c.push(ctlBtn('reject', 'رفض', 'phoneoff', () => hangup(s, 'تم رفض المكالمة')), ctlBtn('accept', 'رد', s.kind === 'video' ? 'video' : 'phone', () => acceptCall(s)));
