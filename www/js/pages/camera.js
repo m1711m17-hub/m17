@@ -17,7 +17,7 @@ export const cameraSupported = () => !!navigator.mediaDevices?.getUserMedia;
 // onSend(File) is called with the final image/video file. Returns a close() function.
 export function openCamera({ onSend, allowVideo = true, sendLabel = 'إرسال' } = {}) {
   let stream = null, facing = 'environment', fi = 0, raf = 0, rec = null, chunks = [], recT0 = 0, recTimer = null, torch = false, result = null, resultUrl = null, closed = false;
-  const video = h('video', { playsinline: true, muted: true, autoplay: true, style: { display: 'none' } });
+  const video = h('video', { playsinline: true, autoplay: true, style: { display: 'none' } }); video.muted = true; video.volume = 0;
   const canvas = h('canvas', { class: 'cam-canvas' });
   const ctx = canvas.getContext('2d');
   const msg = h('div', { class: 'cam-msg' }, 'جارٍ تشغيل الكاميرا...');
