@@ -101,6 +101,6 @@ export async function settingsPage(root, params, ctx) {
         if (!(await confirmBox('سيُحذف حسابك وكل بياناتك نهائياً. هل أنت متأكد؟', 'حذف الحساب', true))) return;
         try { await sb.rpc('delete_my_account'); await sb.auth.signOut(); ctx.rerender(); } catch (e) { toast(e.message, 'err'); }
       })),
-    h('p', { class: 'muted small center' }, 'M17 · الإصدار 1.0'));
+    h('p', { class: 'muted small center' }, 'NEXORA · الإصدار 1.0'));
   [...box.querySelectorAll('.set-row')].find((r) => r.textContent.includes('حذف حسابي نهائياً'))?.classList.add('danger-row');
 }

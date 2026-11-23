@@ -28,6 +28,13 @@ jobs:
             grep -q "android.permission.$P" $M || sed -i "/android.permission.INTERNET/a\\    <uses-permission android:name=\"android.permission.$P\" />" $M
           done
           grep -n "uses-permission" $M
+      - name: App icon + name
+        run: |
+          R=android/app/src/main/res
+          rm -rf $R/mipmap-anydpi-v26 $R/drawable-land* $R/drawable-port* 2>/dev/null || true
+          for d in branding/res/mipmap-*; do mkdir -p $R/$(basename $d); cp $d/*.png $R/$(basename $d)/; done
+          sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">NEXORA</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">NEXORA</string>|' $R/values/strings.xml
+          grep -n "app_name" $R/values/strings.xml
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android

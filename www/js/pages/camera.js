@@ -20,7 +20,7 @@ export function openCamera({ onSend, allowVideo = true, sendLabel = 'إرسال'
   const video = h('video', { playsinline: true, autoplay: true, style: { display: 'none' } }); video.muted = true; video.volume = 0;
   const canvas = h('canvas', { class: 'cam-canvas' });
   const ctx = canvas.getContext('2d');
-  const msg = h('div', { class: 'cam-msg' }, 'جارٍ تشغيل الكاميرا...');
+  const msg = h('div', { class: 'cam-msg', hidden: true });
   const timer = h('div', { class: 'cam-timer', hidden: true });
   const fileIn = h('input', { type: 'file', accept: allowVideo ? 'image/*,video/*' : 'image/*', style: { display: 'none' } });
   const filterBar = h('div', { class: 'cam-filters' }, FILTERS.map((f, i) => h('button', { type: 'button', class: 'cam-filter' + (i === 0 ? ' on' : ''), 'data-f': f.id, onclick: () => { fi = i; [...filterBar.children].forEach((c, k) => c.classList.toggle('on', k === i)); } }, f.name)));
@@ -62,11 +62,11 @@ export function openCamera({ onSend, allowVideo = true, sendLabel = 'إرسال'
   }
 
   async function start() {
-    stopStream(); msg.hidden = false; msg.textContent = 'جارٍ تشغيل الكاميرا...';
+    stopStream(); msg.hidden = true;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: allowVideo });
     } catch (e) {
-      try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e2) { msg.textContent = e2?.name === 'NotAllowedError' ? 'لم تُمنح صلاحية الكاميرا. فعّلها من إعدادات التطبيق ثم أعد المحاولة، أو اختر من المعرض.' : 'تعذّر تشغيل الكاميرا على هذا الجهاز. يمكنك الاختيار من المعرض.'; return; }
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e2) { msg.hidden = false; msg.textContent = e2?.name === 'NotAllowedError' ? 'لم تُمنح صلاحية الكاميرا. فعّلها من إعدادات التطبيق ثم أعد المحاولة، أو اختر من المعرض.' : 'تعذّر تشغيل الكاميرا على هذا الجهاز. يمكنك الاختيار من المعرض.'; return; }
     }
     if (closed) { stopStream(); return; }
     video.srcObject = stream; try { await video.play(); } catch {}

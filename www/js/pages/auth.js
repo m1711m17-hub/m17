@@ -37,7 +37,7 @@ export function authPage(root, onDone) {
 
   clear(root).append(h('div', { class: 'auth' },
     h('div', { class: 'auth-glow' }),
-    h('div', { class: 'brand' }, h('div', { class: 'brand-mark' }, 'M17'), h('p', null, 'تواصل مع من تحب، شارك لحظاتك')),
+    h('div', { class: 'brand' }, h('img', { class: 'brand-logo', src: 'logo.png', alt: 'NEXORA' }), h('p', null, 'تواصل مع من تحب، شارك لحظاتك')),
     h('div', { class: 'seg' }, tabL, tabR), form,
     h('p', { class: 'muted small center' }, 'بإنشاء حساب فأنت توافق على قواعد المجتمع.')));
   set('login');

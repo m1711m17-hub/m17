@@ -353,3 +353,6 @@ body.in-chat .tabbar{display:none}
 .cs-btn.reject svg{background:#e0243f}.cs-btn.accept svg{background:#1fbf5b}
 .cs-btn:active svg{transform:scale(.92)}
 .call-row.missed .cl-sub{color:#ff5470}
+
+.brand-logo{width:150px;height:150px;border-radius:32px;box-shadow:0 0 40px rgba(47,155,255,.45);display:block;margin:0 auto}
+#splash .brand-logo{width:130px;height:130px;animation:pulse 1.4s ease-in-out infinite}

@@ -88,7 +88,7 @@ export function postCard(post, { onDeleted, detail = false } = {}) {
   cBtn.onclick = () => detail ? document.getElementById('comment-input-anchor')?.scrollIntoView({ behavior: 'smooth' }) : openComments(post, (d) => { post.nComments += d; paint(); });
   sBtn.onclick = async () => {
     const link = `${location.origin}${location.pathname}#/post/${post.id}`;
-    const text = `${post.body ? post.body.slice(0, 100) + ' — ' : ''}@${a.username} على M17`;
+    const text = `${post.body ? post.body.slice(0, 100) + ' — ' : ''}@${a.username} على NEXORA`;
     if (!post.shared) {
       try { await sb.from('shares').insert({ post_id: post.id, user_id: state.me.id }); post.shared = true; post.nShares++; paint(); } catch (e) { return toast(e.message, 'err'); }
     }
