@@ -1,10 +1,11 @@
+import { watchHost } from './live.js';
 import { h, icon, avatar, clear, toast, timeAgo, dayLabel } from '../lib/dom.js';
 import { sb, state, refreshBadges } from '../api.js';
 import { headerBar } from './home.js';
 
 const FILTERS = [['all', 'الكل'], ['like', 'إعجابات'], ['comment', 'تعليقات'], ['follow', 'متابعات'], ['message', 'رسائل'], ['broadcast', 'الإدارة']];
-const TEXT = { like: 'أعجب بمنشورك', comment: 'علّق على منشورك', follow: 'بدأ بمتابعتك', message: 'أرسل لك رسالة' };
-const ICON = { like: 'heart', comment: 'comment', follow: 'users', message: 'chat', broadcast: 'megaphone', system: 'bell' };
+const TEXT = { like: 'أعجب بمنشورك', comment: 'علّق على منشورك', follow: 'بدأ بمتابعتك', message: 'أرسل لك رسالة', live: 'بدأ بثاً مباشراً' };
+const ICON = { like: 'heart', comment: 'comment', follow: 'users', message: 'chat', broadcast: 'megaphone', system: 'bell', live: 'live' };
 
 export async function notificationsPage(root) {
   let filter = 'all', rows = [];
@@ -31,6 +32,7 @@ export async function notificationsPage(root) {
         if (n.type === 'like' || n.type === 'comment') location.hash = `#/post/${n.post_id}`;
         else if (n.type === 'follow' && a) location.hash = `#/u/${a.username}`;
         else if (n.type === 'message' && a) location.hash = `#/chat/${a.username}`;
+        else if (n.type === 'live' && a) watchHost(a.id);
       } }, h('div', { class: 'n-av' }, a ? avatar(a, 46) : h('div', { class: 'n-ico' }, icon(ICON[n.type], 22)), h('span', { class: 'n-type ' + n.type }, icon(ICON[n.type], 12))), h('div', { class: 'grow' }, text, h('div', { class: 'muted small' }, timeAgo(n.created_at)))));
     });
   }

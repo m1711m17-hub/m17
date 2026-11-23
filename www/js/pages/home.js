@@ -3,6 +3,7 @@ import { sb, state, enrichPosts, followingIds, POST_SELECT, isStaff } from '../a
 import { postCard } from './postcard.js';
 import { loadStoryGroups, storyBar } from './stories.js';
 import { quickComposer } from './quickcompose.js';
+import { liveStrip } from './live.js';
 
 export function headerBar(title, { back = false, right = [] } = {}) {
   return h('header', { class: 'topbar' },
@@ -19,10 +20,10 @@ export function bellButton() {
 
 export async function homePage(root) {
   const feed = h('div', { class: 'feed' });
-  const storiesBox = h('div');
+  const storiesBox = h('div'); const lives = liveStrip();
   const more = h('button', { class: 'btn ghost block', style: { display: 'none' } }, 'عرض المزيد');
   root.append(headerBar(h('span', { class: 'logo-text' }, 'NEXORA'), { right: [isStaff() ? h('button', { class: 'icon-btn', 'aria-label': 'الإدارة', onclick: () => (location.hash = '#/admin') }, icon('shield', 23)) : null, bellButton()] }),
-    h('div', { class: 'page' }, quickComposer(), storiesBox, feed, more));
+    h('div', { class: 'page' }, quickComposer(), lives, storiesBox, feed, more));
   let ids = [], before = null, loading = false;
   const PAGE = 15;
 
@@ -49,5 +50,5 @@ export async function homePage(root) {
   await Promise.all([loadStories(), loadMore()]);
   const io = new IntersectionObserver((en) => { if (en[0].isIntersecting && more.style.display !== 'none') loadMore(); }, { rootMargin: '400px' });
   io.observe(more);
-  return () => io.disconnect();
+  return () => { io.disconnect(); lives.cleanup?.(); };
 }

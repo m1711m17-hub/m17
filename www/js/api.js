@@ -112,6 +112,8 @@ export function startRealtime() {
     { event: 'UPDATE', table: 'calls', filter: `caller_id=eq.${me}` },
     { event: 'UPDATE', table: 'calls', filter: `callee_id=eq.${me}` },
     { event: 'INSERT', table: 'call_signals', filter: `to_id=eq.${me}` },
+    { event: 'INSERT', table: 'live_signals', filter: `to_id=eq.${me}` },
+    { event: 'INSERT', table: 'lives' }, { event: 'UPDATE', table: 'lives' },
   ] })
     .onPg('INSERT', 'messages', (d) => emit('rt:message', d.record))
     .onPg('UPDATE', 'messages', (d) => emit('rt:message-update', d.record))
@@ -119,6 +121,8 @@ export function startRealtime() {
     .onPg('INSERT', 'calls', (d) => emit('rt:call', d.record))
     .onPg('UPDATE', 'calls', (d) => emit('rt:call-update', d.record))
     .onPg('INSERT', 'call_signals', (d) => emit('rt:signal', d.record))
+    .onPg('INSERT', 'live_signals', (d) => emit('rt:live-signal', d.record))
+    .onPg('INSERT', 'lives', (d) => emit('rt:live', d.record)).onPg('UPDATE', 'lives', (d) => emit('rt:live', d.record))
     .onReady(() => emit('rt:ready')).subscribe();
   rt.onStatus((s) => emit('rt:status', s));
   rt.connect();
@@ -132,6 +136,11 @@ export const touchPresence = () => (state.me && state.me.show_presence !== false
 export function goOffline() {
   const tok = sb.session?.access_token; if (!tok) return;
   try { fetch(SUPABASE_URL + '/rest/v1/rpc/go_offline', { method: 'POST', keepalive: true, headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify({ p_device: DEVICE }) }).catch(() => {}); } catch {}
+}
+// fire-and-forget RPC that survives the page being closed (used to end a live broadcast on exit)
+export function beaconRpc(name, args) {
+  const tok = sb.session?.access_token; if (!tok) return;
+  try { fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, { method: 'POST', keepalive: true, headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify(args || {}) }).catch(() => {}); } catch {}
 }
 export async function presenceOf(id) { try { return (await sb.rpc('get_presence', { ids: [id] }))?.[0] || null; } catch { return null; } }
 export async function presenceMany(ids) { try { return new Map(((await sb.rpc('get_presence', { ids })) || []).map((p) => [p.user_id, p])); } catch { return new Map(); } }

@@ -13,6 +13,7 @@ import { settingsPage } from './pages/settings.js';
 import { adminPage } from './pages/admin.js';
 import { postPage } from './pages/postpage.js';
 import { callsPage, initCalls, stopCalls, inCall } from './pages/calls.js';
+import { openLive, endLiveOnExit } from './pages/live.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -35,7 +36,7 @@ function buildTabbar() {
   const tab = (key, ic, label, href) => h('a', { class: 'tab', 'data-tab': key, href }, h('span', { class: 'tab-ico' }, icon(ic, 24), h('span', { class: 'dot', 'data-badge': key })), h('span', null, label));
   return h('nav', { class: 'tabbar' },
     tab('home', 'home', 'الرئيسية', '#/home'), tab('explore', 'compass', 'استكشاف', '#/explore'),
-    h('a', { class: 'tab-fab', href: '#/compose', 'aria-label': 'نشر' }, icon('plus', 28)),
+    h('a', { class: 'tab-fab tab-live', href: '#/home', 'aria-label': 'بث مباشر', onclick: (e) => { e.preventDefault(); openLive(); } }, h('i', { class: 'fab-dot' }), h('span', null, 'LIVE')),
     tab('messages', 'chat', 'الرسائل', '#/messages'), tab('profile', 'user', 'حسابي', '#/profile'));
 }
 function paintBadges() {
@@ -112,7 +113,7 @@ document.addEventListener('visibilitychange', () => {
   if (!state.me) return;
   touchPresence(); refreshBadges(); emit('m17:resume'); rt?.reconnectNow();
 });
-window.addEventListener('pagehide', () => { if (state.me && !inCall()) goOffline(); });
+window.addEventListener('pagehide', () => { endLiveOnExit(); if (state.me && !inCall()) goOffline(); });
 window.addEventListener('online', () => { rt?.reconnectNow(); emit('m17:resume'); });
 
 // in-app banner for new messages / notifications while not looking at that chat
@@ -131,7 +132,7 @@ bus.addEventListener('rt:notification', () => refreshBadges());
 const CapApp = window.Capacitor?.Plugins?.App;
 CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
-  const ov = document.querySelector('.cam-screen,.call-screen,.lightbox,.sheet-back'); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
+  const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
   if (/^\/(chat\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
