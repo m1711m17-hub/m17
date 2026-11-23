@@ -43,6 +43,7 @@ export async function placeCall(peer, kind) {
   handled.add(r.id);
   const s = newSession({ callId: r.id, peer, kind, role: 'caller' });
   s.local = media.stream; s.camOn = kind === 'video' && !media.camDenied;
+  s.local.getAudioTracks().forEach((t) => (t.enabled = false)); // mic stays silent while ringing; enabled once connected
   if (media.camDenied) toast('لم تُمنح صلاحية الكاميرا — المكالمة بالصوت فقط', 'err');
   mountUI(s); s.stopRing = ringer('out');
   s.timers.push(setTimeout(() => { if (cur === s && s.status === 'calling') hangup(s, 'لا يوجد رد'); }, 45000));
@@ -83,7 +84,7 @@ function attachRemote(s) { const v = s.ui.remote; if (v && v.srcObject !== s.rem
 
 function onConnected(s) {
   if (s.connectedAt) { s.weak = false; paint(s); return; }
-  s.stopRing?.(); s.stopRing = null; s.status = 'connected'; s.connectedAt = Date.now(); s.weak = false;
+  s.stopRing?.(); s.stopRing = null; s.status = 'connected'; s.connectedAt = Date.now(); s.weak = false; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted));
   s.timers.push(setInterval(() => paint(s), 1000)); sendCtl(s); paint(s); attachRemote(s);
 }
 
