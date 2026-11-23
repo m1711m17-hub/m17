@@ -1,9 +1,12 @@
 import { h, icon, avatar, clear, toast, timeAgo, hhmm, dayLabel, sheet, actionSheet } from '../lib/dom.js';
-import { sb, state, uploadMedia, refreshBadges, PROFILE_MINI, feature, bus, rt, rtLive, pairName, presenceOf } from '../api.js';
+import { sb, state, uploadMedia, uploadAudio, refreshBadges, PROFILE_MINI, feature, bus, rt, rtLive, pairName, presenceOf } from '../api.js';
 import { POLL_CHAT_MS } from '../config.js';
 import { headerBar, bellButton } from './home.js';
 import { userRow } from './explore.js';
 import { blockUser, reportDialog, viewImage } from './postcard.js';
+import { createRecorder, recorderSupported, voiceBubble, fmtDur, decodeWave } from '../lib/voice.js';
+import { stickerPanel } from './stickers.js';
+import { openCamera, cameraSupported } from './camera.js';
 
 function lastText(c) {
   if (c.last_kind === 'audio') return '🎙️ رسالة صوتية';
@@ -71,10 +74,16 @@ export async function chatPage(root, params) {
   const fileIn = h('input', { type: 'file', accept: 'image/*,video/*', style: { display: 'none' } });
   const keepFocus = (e) => e.preventDefault(); // pressing a button must not hide the keyboard / blur the field
   const sendBtn = h('button', { class: 'icon-btn accent', type: 'button', 'aria-label': 'إرسال', onpointerdown: keepFocus }, icon('send', 22));
-  const attach = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إرفاق', onclick: () => fileIn.click() }, icon('image', 22));
+  const attach = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إرفاق من المعرض', onclick: () => fileIn.click() }, icon('image', 22));
+  const camBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'الكاميرا', onclick: () => openCamera({ onSend: async (f) => { toast('جارٍ الرفع...'); const m = await uploadMedia('chat', f); await send({ media_url: m.url, media_type: m.type }); } }) }, icon('camera', 22));
+  const stickBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'ملصقات', onpointerdown: keepFocus, onclick: () => { input.blur(); panel.toggle(); stickBtn.classList.toggle('on', panel.isOpen); } }, icon('smile', 22));
+  const panel = stickerPanel({ onPick: (st) => { panel.close(); stickBtn.classList.remove('on'); send({ sticker: `${st.emoji}|${st.label}|${st.color}` }); } });
+  const micBtn = h('button', { class: 'icon-btn accent mic', type: 'button', 'aria-label': 'تسجيل رسالة صوتية (اضغط مطولاً)' }, icon('mic', 22));
+  const recBar = h('div', { class: 'rec-bar', hidden: true });
   const statusEl = h('div', { class: 'chat-status muted small' });
   let seen = new Map(), lastDay = '', stop = false, busy = false, peerKind = 'idle', peerKindTimer = null, pres = null;
 
+  let chatBar;
   root.classList.add('chat-root');
   root.append(h('header', { class: 'topbar' },
     h('button', { class: 'icon-btn', type: 'button', onclick: () => (location.hash = '#/messages'), 'aria-label': 'رجوع' }, icon('back', 22)),
@@ -85,7 +94,8 @@ export async function chatPage(root, params) {
       { label: 'حظر المستخدم', icon: 'block', danger: true, run: async () => { if (await blockUser(peer)) location.hash = '#/messages'; } },
     ]) }, icon('more', 22))),
     msgs,
-    h('div', { class: 'chat-bar' }, attach, input, sendBtn, fileIn));
+    panel,
+    chatBar = h('div', { class: 'chat-bar' }, attach, cameraSupported() ? camBtn : null, stickBtn, input, sendBtn, micBtn, recBar, fileIn));
 
   // ---- status line: typing / recording / online / last seen ----
   function paintStatus() {
@@ -126,11 +136,11 @@ export async function chatPage(root, params) {
     const kids = [];
     if (m.story_id || m.story_preview) kids.push(h('div', { class: 'story-quote' }, m.story_preview ? h('img', { src: m.story_preview, alt: '' }) : null, h('span', null, mine ? 'رددت على حالة' : 'رد على حالتك')));
     if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
-    if (m.audio_url) kids.push(h('audio', { class: 'audio-plain', src: m.audio_url, controls: true, preload: 'none' }));
+    if (m.audio_url) kids.push(voiceBubble(m, { mine }));
     if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
     if (m.body) kids.push(h('div', { class: 'b-text' }, m.body));
     kids.push(h('div', { class: 'b-meta' }, pending ? '…' : hhmm(m.created_at), mine && m.read_at ? ' ✓✓' : ''));
-    return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (m.sticker ? ' bare' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
+    return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (m.sticker ? ' bare' : '') + (m.audio_url ? ' has-voice' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
   }
   function addMsgs(rows) {
     const near = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 160;
@@ -160,26 +170,85 @@ export async function chatPage(root, params) {
   }
 
   // ---- sending (optimistic bubble, never loses the typed text) ----
-  async function send(extra = {}) {
-    const body = input.value.trim();
+  async function send(extra = {}, resolve = null) {
+    const noText = !!(extra.audio_url || extra.sticker);
+    const body = noText ? '' : input.value.trim();
     if (!body && !extra.media_url && !extra.audio_url && !extra.sticker) return;
     if (!feature('messages')) return toast('الرسائل متوقفة حالياً', 'err');
-    const tmp = bubble({ id: 'tmp' + Date.now(), sender_id: state.me.id, body, ...extra, created_at: new Date().toISOString() }, true);
-    msgs.append(tmp); msgs.scrollTop = msgs.scrollHeight;
-    input.value = ''; input.style.height = ''; draftSet(''); clearTimeout(idleTimer); sendStatus('idle');
+    const tmp = bubble({ id: 'tmp' + Date.now() + Math.random(), sender_id: state.me.id, body, ...extra, created_at: new Date().toISOString() }, true);
+    tmp.classList.add('tmp'); msgs.append(tmp); msgs.scrollTop = msgs.scrollHeight;
+    if (!noText) { input.value = ''; input.style.height = ''; draftSet(''); syncBtn(); }
+    clearTimeout(idleTimer); sendStatus('idle');
     try {
-      await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: peer.id, body, ...extra });
+      const real = resolve ? await resolve() : extra;
+      await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: peer.id, body, ...real });
       await poll(); msgs.scrollTop = msgs.scrollHeight;
-    } catch (e) { tmp.remove(); if (body) { input.value = body; draftSet(body); } toast(e.message, 'err'); }
-    if (!extra.sticker && !extra.audio_url) input.focus({ preventScroll: true });
+    } catch (e) { tmp.remove(); if (body) { input.value = body; draftSet(body); syncBtn(); } toast(e.message, 'err'); }
+    if (!noText && !extra.media_url) input.focus({ preventScroll: true });
   }
+  function syncBtn() { const has = input.value.trim().length > 0, can = recorderSupported(); sendBtn.hidden = !has && can; micBtn.hidden = has || !can; }
+
+  // ---- voice recording: hold = record, release = send, slide sideways = cancel, slide up = lock (pause/resume/preview) ----
+  let rec = null, rstate = 'idle', started = false, rtick = null, rstat = null, rlevels = [], rresult = null, rurl = null, sx = 0, sy = 0;
+  const RW = 26; const liveBars = Array.from({ length: RW }, () => h('i'));
+  const liveWave = h('div', { class: 'rec-wave' }, ...liveBars);
+  const recTime = h('span', { class: 'rec-time' }, '0:00');
+  const paintLive = () => liveBars.forEach((b, i) => { const v = rlevels[rlevels.length - RW + i] ?? 0.06; b.style.height = Math.round(4 + v * 26) + 'px'; });
+  const rbtn = (cls, label, ic, fn) => h('button', { class: 'icon-btn ' + cls, type: 'button', 'aria-label': label, onclick: fn }, icon(ic, 22));
+  function renderRec() {
+    recBar.replaceChildren();
+    if (rstate === 'idle') { recBar.hidden = true; chatBar.classList.remove('recording'); return; }
+    recBar.hidden = false; chatBar.classList.add('recording');
+    if (rstate === 'hold') recBar.append(h('i', { class: 'rec-dot' }), recTime, liveWave, h('span', { class: 'rec-hint' }, '‹ اسحب للإلغاء · ⌃ للقفل'));
+    else if (rstate === 'locked') recBar.append(rbtn('danger', 'حذف', 'trash', () => discard()), h('i', { class: 'rec-dot' + (rec?.paused ? ' paused' : '') }), recTime, liveWave,
+      rbtn('', rec?.paused ? 'متابعة' : 'إيقاف مؤقت', rec?.paused ? 'mic' : 'pause', () => { rec.paused ? rec.resume() : rec.pause(); sendStatus(rec.paused ? 'idle' : 'recording'); renderRec(); }),
+      rbtn('', 'معاينة', 'stop', () => toPreview()), rbtn('accent', 'إرسال', 'send', () => finish(true)));
+    else if (rstate === 'preview') recBar.append(rbtn('danger', 'حذف', 'trash', () => discard()), voiceBubble({ audio_url: rurl, audio_ms: rresult.ms, audio_wave: rresult.wave }, { mine: true }), rbtn('accent', 'إرسال', 'send', () => sendResult(rresult)));
+  }
+  function resetRec() { clearInterval(rtick); clearInterval(rstat); rtick = rstat = null; rec = null; started = false; rstate = 'idle'; rlevels = []; if (rurl) { URL.revokeObjectURL(rurl); rurl = null; } rresult = null; sendStatus('idle'); renderRec(); }
+  async function beginRec() {
+    if (rstate !== 'idle') return;
+    rec = createRecorder(); rstate = 'hold'; rlevels = []; recTime.textContent = '0:00'; renderRec(); paintLive();
+    const mine = rec; rec.onLevel = (lv) => { rlevels.push(lv); paintLive(); };
+    try { await mine.start(); } catch (e) { if (rec === mine) resetRec(); toast(e?.name === 'NotAllowedError' ? 'لم تُمنح صلاحية الميكروفون. فعّلها من إعدادات التطبيق' : 'تعذّر تشغيل الميكروفون', 'err'); return; }
+    if (rec !== mine || rstate === 'idle') { mine.cancel(); return; }
+    started = true; navigator.vibrate?.(15);
+    if (rstate === 'cancelling') { discard(); return; }
+    sendStatus('recording'); rstat = setInterval(() => sendStatus('recording'), 2600);
+    rtick = setInterval(() => { recTime.textContent = fmtDur(rec ? rec.elapsed : 0); if (rec && rec.elapsed > 5 * 60000) finish(true); }, 200);
+  }
+  function discard() { try { rec?.cancel(); } catch {} resetRec(); }
+  async function toPreview() { const r = await rec.stop(); clearInterval(rtick); clearInterval(rstat); sendStatus('idle'); if (!r || r.ms < 500) return resetRec(); rresult = r; rurl = URL.createObjectURL(r.blob); rstate = 'preview'; renderRec(); }
+  async function finish(send_) {
+    const r = await rec.stop(); const ok = r && r.ms >= 700; if (!ok) { resetRec(); if (send_ && r) toast('الرسالة قصيرة — اضغط مطولاً للتسجيل'); return; }
+    const local = URL.createObjectURL(r.blob); resetRec(); sendResult(r, local);
+  }
+  function sendResult(r, local) {
+    const url0 = local || rurl; const keep = !local; // preview's url is revoked in resetRec; make a fresh one for the pending bubble
+    const pendingUrl = keep ? URL.createObjectURL(r.blob) : url0; resetRec();
+    send({ audio_url: pendingUrl, audio_ms: r.ms, audio_wave: r.wave }, async () => {
+      const ext = r.type.includes('ogg') ? 'ogg' : r.type.includes('mp4') ? 'm4a' : 'webm';
+      const up = await uploadAudio('voice', r.blob, ext); return { audio_url: up, audio_ms: r.ms, audio_wave: r.wave };
+    }).finally(() => setTimeout(() => URL.revokeObjectURL(pendingUrl), 4000));
+  }
+  micBtn.style.touchAction = 'none';
+  micBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); sx = e.clientX; sy = e.clientY; try { micBtn.setPointerCapture(e.pointerId); } catch {} beginRec(); });
+  micBtn.addEventListener('pointermove', (e) => {
+    if (rstate !== 'hold') return; const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 90) { if (started) discard(); else rstate = 'cancelling'; }
+    else if (dy < -70 && started) { rstate = 'locked'; navigator.vibrate?.(10); renderRec(); }
+  });
+  micBtn.addEventListener('pointerup', () => { if (rstate === 'hold') { if (started) finish(true); else rstate = 'cancelling'; } });
+  micBtn.addEventListener('pointercancel', () => { if (rstate === 'hold') { if (started) discard(); else rstate = 'cancelling'; } });
+  micBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+  syncBtn();
   sendBtn.onclick = () => send();
   let draftTimer = null;
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
   input.addEventListener('input', () => {
     input.style.height = 'auto'; input.style.height = Math.min(120, input.scrollHeight) + 'px';
     clearTimeout(draftTimer); draftTimer = setTimeout(() => draftSet(input.value), 250);
-    if (input.value.trim()) typingPulse(); else { clearTimeout(idleTimer); sendStatus('idle'); }
+    syncBtn(); if (input.value.trim()) typingPulse(); else { clearTimeout(idleTimer); sendStatus('idle'); }
   });
   const saveDraftNow = () => draftSet(input.value);
   window.addEventListener('pagehide', saveDraftNow);
@@ -187,7 +256,7 @@ export async function chatPage(root, params) {
     const f = fileIn.files[0]; fileIn.value = ''; if (!f) return;
     try { toast('جارٍ رفع الملف...'); const m = await uploadMedia('chat', f); await send({ media_url: m.url, media_type: m.type }); } catch (e) { toast(e.message, 'err'); }
   };
-  const saved = draftGet(); if (saved) { input.value = saved; input.style.height = Math.min(120, input.scrollHeight) + 'px'; }
+  const saved = draftGet(); if (saved) { input.value = saved; input.style.height = Math.min(120, input.scrollHeight) + 'px'; syncBtn(); }
 
   // ---- live updates ----
   const onMsg = (e) => { const m = e.detail; if (m && m.sender_id === peer.id) { addMsgs([m]); setPeerKind('idle'); markRead(); pres = { ...(pres || {}), online: true, last_seen: new Date().toISOString() }; paintStatus(); } };
@@ -199,7 +268,7 @@ export async function chatPage(root, params) {
   let n = 0;
   const iv = setInterval(() => { if (document.hidden) return; n++; if (!rtLive() || n % 7 === 0) poll(); if (n % 6 === 0) refreshPresence(); }, POLL_CHAT_MS);
   return () => {
-    stop = true; clearInterval(iv); clearTimeout(idleTimer); clearTimeout(peerKindTimer); clearTimeout(draftTimer);
+    stop = true; try { rec?.cancel(); } catch {} clearInterval(rtick); clearInterval(rstat); clearInterval(iv); clearTimeout(idleTimer); clearTimeout(peerKindTimer); clearTimeout(draftTimer);
     saveDraftNow(); sendStatus('idle'); chan?.unsubscribe();
     window.removeEventListener('pagehide', saveDraftNow);
     bus.removeEventListener('rt:message', onMsg); bus.removeEventListener('rt:message-update', onUpd);
