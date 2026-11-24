@@ -1,5 +1,7 @@
 // Audio / video calls over WebRTC. Signaling = Supabase tables `calls` + `call_signals` (Realtime events with REST polling fallback).
 import { h, icon, avatar, clear, toast, timeAgo } from '../lib/dom.js';
+import { registerPlugin } from '@capacitor/core';
+const AudioRoute = registerPlugin('AudioRoute');
 import { sb, state, bus, rtLive, PROFILE_MINI } from '../api.js';
 import { ICE_SERVERS, refreshIce } from '../config.js';
 import { headerBar } from './home.js';
@@ -234,14 +236,21 @@ function mountUI(s) {
   paint(s);
 }
 async function toggleSpeaker(s) {
-  const v = s.ui.remoteAudio || s.ui.remote;
-  if (!v?.setSinkId || !navigator.mediaDevices.enumerateDevices) return toast('تبديل مخرج الصوت غير مدعوم على هذا الجهاز', 'err');
+  const want = !s.speaker;
   try {
-    const outs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
-    const want = !s.speaker; const pick = want ? outs.find((d) => /speaker/i.test(d.label)) : outs.find((d) => /earpiece|receiver|handset|phone/i.test(d.label));
-    if (!pick && outs.length < 2) return toast('لا يوجد مخرج صوت آخر متاح على هذا الجهاز', 'err');
-    await v.setSinkId((pick || outs.find((d) => d.deviceId !== 'default') || outs[0]).deviceId); s.speaker = want; paint(s);
-  } catch { toast('تعذّر تبديل مخرج الصوت', 'err'); }
+    // Native Android AudioManager is required: Android WebView does not reliably
+    // implement HTMLMediaElement.setSinkId for call audio routing.
+    if (window.Capacitor?.isNativePlatform?.()) {
+      await AudioRoute.setSpeaker({ enabled: want });
+      s.speaker = want;
+      paint(s);
+      return;
+    }
+    toast('تبديل مخرج الصوت متاح داخل تطبيق M17 على أندرويد فقط', 'err');
+  } catch (error) {
+    console.warn('[M17 call audio route]', error);
+    toast('تعذّر تبديل مخرج الصوت من إعدادات أندرويد', 'err');
+  }
 }
 function toggleMute(s) { s.muted = !s.muted; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted)); sendCtl(s); paint(s); }
 async function toggleCam(s) {
