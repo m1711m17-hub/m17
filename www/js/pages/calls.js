@@ -90,7 +90,28 @@ function setupPc(s) {
   ch.onopen = () => sendCtl(s);
 }
 const sendCtl = (s) => { try { if (s.ctl?.readyState === 'open') s.ctl.send(JSON.stringify({ cam: s.kind === 'video' ? s.camOn : false, muted: s.muted })); } catch {} };
-function attachRemote(s) { const v = s.ui.remote, a = s.ui.remoteAudio; if (v && v.srcObject !== s.remoteVideo) { v.srcObject = s.remoteVideo; v.muted = true; v.playsInline = true; v.play?.().catch(() => {}); } if (a && a.srcObject !== s.remoteAudio) { a.srcObject = s.remoteAudio; a.muted = false; a.volume = 1; a.play?.().catch(() => {}); } else if (a && a.paused && s.remoteAudio.getAudioTracks().length) a.play?.().catch(() => {}); }
+function attachRemote(s) {
+  const v = s.ui.remote, a = s.ui.remoteAudio;
+  if (v && v.srcObject !== s.remoteVideo) {
+    v.srcObject = s.remoteVideo; v.muted = true; v.playsInline = true;
+    v.play?.().catch(() => {});
+  }
+  if (a) {
+    // Keep remote audio on its own media element: the video element is muted
+    // intentionally so video calls cannot silently swallow the other user's voice.
+    a.autoplay = true; a.playsInline = true; a.muted = false; a.volume = 1;
+    if (a.srcObject !== s.remoteAudio) a.srcObject = s.remoteAudio;
+    if (s.remoteAudio.getAudioTracks().some((t) => t.readyState === 'live')) {
+      const p = a.play?.();
+      if (p?.catch) p.catch(() => {
+        // Android WebView may defer autoplay until the next media lifecycle tick.
+        setTimeout(() => {
+          if (!s.ended && a.srcObject === s.remoteAudio && a.paused) a.play?.().catch(() => {});
+        }, 250);
+      });
+    }
+  }
+}
 
 function onConnected(s) {
   if (s.connectedAt) { s.weak = false; s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); paint(s); return; }
@@ -201,7 +222,7 @@ function finish(s, text) {
 const ctlBtn = (cls, label, ic, fn, on) => h('button', { class: 'cs-btn ' + cls + (on ? ' on' : ''), type: 'button', 'aria-label': label, onclick: fn }, icon(ic, 26), h('span', null, label));
 function mountUI(s) {
   const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true }); remote.muted = true;
-  const remoteAudio = h('audio', { class: 'cs-audio', autoplay: true }); remoteAudio.hidden = true; remoteAudio.muted = false; remoteAudio.volume = 1;
+  const remoteAudio = h('audio', { class: 'cs-audio', autoplay: true }); remoteAudio.autoplay = true; remoteAudio.playsInline = true; remoteAudio.muted = false; remoteAudio.volume = 1;
   const local = h('video', { class: 'cs-local', playsinline: true, autoplay: true }); local.muted = true; local.volume = 0;
   const name = h('h2', null, s.peer.display_name || s.peer.username), status = h('div', { class: 'cs-status' }), flags = h('div', { class: 'cs-flags' });
   const info = h('div', { class: 'cs-info' }, h('div', { class: 'cs-av' }, avatar(s.peer, 120)), name, status, flags);
