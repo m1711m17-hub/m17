@@ -137,8 +137,12 @@ async function flushIce(s) { const q = s.pendingIce.splice(0); for (const c of q
 
 // ---- signaling intake (realtime push + polling fallback, deduped by id) ----
 async function onSignal(sig) {
-  if (!sig || seenSig.has(sig.id)) return; seenSig.add(sig.id);
-  const s = cur; if (!s || sig.call_id !== s.callId || s.ended) return;
+  if (!sig) return;
+  const s = cur;
+  // Do not mark a signal as seen until its call session exists; the offer can arrive
+  // before the incoming-call event and must remain available to the polling fallback.
+  if (!s || sig.call_id !== s.callId || s.ended || seenSig.has(sig.id)) return;
+  seenSig.add(sig.id);
   try {
     if (sig.kind === 'offer') { s.offer = sig.payload; if (s.local) await applyOffer(s); }
     else if (sig.kind === 'answer') { if (s.pc && !s.remoteSet) { await s.pc.setRemoteDescription(sig.payload); s.remoteSet = true; await flushIce(s); } }
