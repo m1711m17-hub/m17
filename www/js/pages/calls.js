@@ -68,6 +68,7 @@ function setupPc(s) {
   const pc = s.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
   pc.onicecandidate = (e) => { if (e.candidate) sendSignal(s, 'ice', e.candidate.toJSON()); };
   pc.ontrack = (e) => { s.remote.addTrack(e.track); e.track.onunmute = () => paint(s); paint(s); attachRemote(s); };
+  pc.oniceconnectionstatechange = () => { if (!s.ended && ['connected', 'completed'].includes(pc.iceConnectionState)) onConnected(s); };
   pc.onconnectionstatechange = () => {
     if (s.ended) return;
     const st = pc.connectionState;
@@ -83,9 +84,9 @@ const sendCtl = (s) => { try { if (s.ctl?.readyState === 'open') s.ctl.send(JSON
 function attachRemote(s) { const v = s.ui.remote; if (v && v.srcObject !== s.remote) { v.srcObject = s.remote; v.play?.().catch(() => {}); } }
 
 function onConnected(s) {
-  if (s.connectedAt) { s.weak = false; paint(s); return; }
+  if (s.connectedAt) { s.weak = false; s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); paint(s); return; }
   s.stopRing?.(); s.stopRing = null; s.status = 'connected'; s.connectedAt = Date.now(); s.weak = false; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted));
-  s.timers.push(setInterval(() => paint(s), 1000)); sendCtl(s); paint(s); attachRemote(s);
+  s.timers.push(setInterval(() => { s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); const v = s.ui.remote; if (v && v.paused) v.play?.().catch(() => {}); paint(s); }, 1000)); sendCtl(s); paint(s); attachRemote(s);
 }
 
 // ---- incoming ----

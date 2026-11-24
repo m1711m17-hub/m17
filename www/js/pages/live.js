@@ -276,6 +276,7 @@ function openLiveInner() {
     s.stream = out; return out;
   }
   async function start() {
+    try { const AC0 = window.AudioContext || window.webkitAudioContext; s.preActx = new AC0(); s.preActx.resume?.(); } catch {} // created inside the tap so Android lets it run
     startBtn.disabled = true;
     try { await buildStream(); } catch (e) { startBtn.disabled = false; return toast(e.message || 'تعذّر تجهيز البث', 'err'); }
     try {
@@ -310,12 +311,19 @@ function openLiveInner() {
     s.timers.push(setInterval(ping, 8000)); s.timers.push(setInterval(pollSig, 2000)); ping(); toast('بدأ البث المباشر 🔴');
   }
   // ---- guests (invited people who talk with you): their mic is mixed into the broadcast audio ----
+  function useRawAudio() {
+    s.mixTrack = null; try { s.actx?.close(); } catch {} s.actx = null;
+    const raw = s.stream?.getAudioTracks()[0]; if (!raw) return;
+    for (const p of s.peers.values()) { try { const snd = p.pc.getSenders().find((x) => x.track?.kind === 'audio' || x.__a); if (snd) snd.replaceTrack(raw); } catch {} }
+  }
   function sendTracks() { const v = s.stream.getVideoTracks()[0], a = s.mixTrack || s.stream.getAudioTracks()[0]; return [v, a].filter(Boolean); }
   function setupAudio() {
     try {
-      const AC = window.AudioContext || window.webkitAudioContext; s.actx = new AC(); s.actx.resume?.(); s.mixDest = s.actx.createMediaStreamDestination(); s.mixTrack = s.mixDest.stream.getAudioTracks()[0];
+      const AC = window.AudioContext || window.webkitAudioContext; s.actx = s.preActx || new AC(); s.actx.resume?.(); s.mixDest = s.actx.createMediaStreamDestination(); s.mixTrack = s.mixDest.stream.getAudioTracks()[0];
       const at = s.stream.getAudioTracks(); s.hostSrc = at.length ? s.actx.createMediaStreamSource(new MediaStream([at[0]])) : null; rewire();
-    } catch { s.mixTrack = null; s.actx = null; }
+      // safety net: if the audio engine cannot run on this device, send the raw microphone track instead of silence
+      setTimeout(() => { if (s.ended || !s.actx || s.actx.state === 'running' || s.guests.size) return; useRawAudio(); }, 1800);
+    } catch { useRawAudio(); }
   }
   function rewire() {
     if (!s.actx) return; const hs = s.hostSrc;
