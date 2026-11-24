@@ -17,6 +17,8 @@ jobs:
       - run: npm install
       - name: Bundle Capacitor audio route bridge
         run: npx esbuild www/js/lib/audio-route.js --bundle --format=esm --platform=browser --outfile=www/js/lib/audio-route.bundle.js
+      - name: Bundle complete application for Android WebView
+        run: npx esbuild www/js/app.js --bundle --format=esm --platform=browser --outfile=www/js/app.bundle.js
       - name: Check JavaScript syntax
         run: |
           for f in $(find www/js -type f -name '*.js'); do
