@@ -108,14 +108,20 @@ jobs:
             }
           }
           EOF
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("android/app/src/main/java/com/m17/social/MainActivity.java")
-          s = p.read_text()
-          if "registerPlugin(AudioRoutePlugin.class)" not in s:
-              s = s.replace("    super.onCreate(savedInstanceState);", "    registerPlugin(AudioRoutePlugin.class);\n    super.onCreate(savedInstanceState);")
-          p.write_text(s)
-          PY
+          cat > android/app/src/main/java/com/m17/social/MainActivity.java <<'EOF'
+          package com.m17.social;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              registerPlugin(AudioRoutePlugin.class);
+              super.onCreate(savedInstanceState);
+            }
+          }
+          EOF
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android
