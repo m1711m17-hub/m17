@@ -474,8 +474,9 @@ export async function openWatch(live, host, opts = {}) {
   pc.ondatachannel = (e) => { w.dc = e.channel; e.channel.onopen = () => { if (opts.guest) w.sendAccept(); }; e.channel.onmessage = (ev) => { try { const m = JSON.parse(ev.data); if (!m) return; if (m.t === 'off') handleOffer(String(m.sdp || '')); else if (m.t === 'full') toast('اكتمل عدد المتحدثين', 'err'); else if (['c', 'h', 'g'].includes(m.t)) ov.addComment(m); } catch {} }; };
   const remote = new MediaStream();
   pc.ontrack = (e) => { remote.addTrack(e.track); if (video.srcObject !== remote) video.srcObject = remote; video.play?.().catch(() => { tap.hidden = false; }); };
-  pc.onicecandidate = (e) => { if (e.candidate) sendSig(w.id, w.hostId, 'ice', e.candidate.toJSON()); };
-  pc.onconnectionstatechange = () => { if (pc.connectionState === 'connected') status.hidden = true; else if (pc.connectionState === 'failed') { status.hidden = false; status.textContent = 'تعذّر الاتصال بالبث (الشبكة لا تسمح بالاتصال المباشر).'; } else if (pc.connectionState === 'disconnected') { status.hidden = false; status.textContent = 'الاتصال ضعيف...'; } };
+  const cnt = { host: 0, srflx: 0, relay: 0 };
+  pc.onicecandidate = (e) => { if (e.candidate) { if (e.candidate.type in cnt) cnt[e.candidate.type]++; sendSig(w.id, w.hostId, 'ice', e.candidate.toJSON()); } };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'connected') status.hidden = true; else if (pc.connectionState === 'failed') { status.hidden = false; status.textContent = 'تعذّر الاتصال بالبث (الشبكة لا تسمح بالاتصال المباشر).'; status.append(h('div', { style: 'font-size:12px;opacity:.7;direction:ltr;margin-top:6px' }, `relay ${cnt.relay} · srflx ${cnt.srflx} · host ${cnt.host}`)); try { pc.restartIce?.(); } catch {} } else if (pc.connectionState === 'disconnected') { status.hidden = false; status.textContent = 'الاتصال ضعيف...'; } };
   video.addEventListener('playing', () => { status.hidden = true; });
   const join = () => sendSig(w.id, w.hostId, 'join'); join();
   let tries = 0;
