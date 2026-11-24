@@ -68,7 +68,7 @@ function setupPc(s) {
   s.cands = { host: 0, srflx: 0, relay: 0 };
   const pc = s.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
   pc.onicecandidate = (e) => { if (e.candidate) { const ty = e.candidate.type; if (ty in s.cands) s.cands[ty]++; } if (e.candidate) sendSignal(s, 'ice', e.candidate.toJSON()); };
-  pc.ontrack = (e) => { const target = e.track.kind === 'audio' ? s.remoteAudio : s.remoteVideo; if (!target.getTracks().some((t) => t.id === e.track.id)) target.addTrack(e.track); e.track.onunmute = () => { attachRemote(s); paint(s); }; attachRemote(s); paint(s); };
+  pc.ontrack = (e) => { const target = e.track.kind === 'audio' ? s.remoteAudio : s.remoteVideo; if (!target.getTracks().some((t) => t.id === e.track.id)) target.addTrack(e.track); e.track.onunmute = () => { attachRemote(s); paint(s); }; e.track.onmute = () => paint(s); e.track.onended = () => { try { target.removeTrack(e.track); } catch {} attachRemote(s); paint(s); }; attachRemote(s); paint(s); };
   pc.oniceconnectionstatechange = () => { if (!s.ended && ['connected', 'completed'].includes(pc.iceConnectionState)) onConnected(s); };
   pc.onconnectionstatechange = () => {
     if (s.ended) return;
@@ -95,7 +95,7 @@ function attachRemote(s) { const v = s.ui.remote, a = s.ui.remoteAudio; if (v &&
 function onConnected(s) {
   if (s.connectedAt) { s.weak = false; s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); paint(s); return; }
   s.stopRing?.(); s.stopRing = null; s.status = 'connected'; s.connectedAt = Date.now(); s.weak = false; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted));
-  s.timers.push(setInterval(() => { s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); const v = s.ui.remote; if (v && v.paused) v.play?.().catch(() => {}); paint(s); }, 1000)); sendCtl(s); paint(s); attachRemote(s);
+  s.timers.push(setInterval(() => { s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); const v = s.ui.remote; if (v && v.paused) v.play?.().catch(() => {}); const a = s.ui.remoteAudio; if (a && a.paused && s.remoteAudio.getAudioTracks().some((t) => t.readyState === 'live')) a.play?.().catch(() => {}); paint(s); }, 1000)); sendCtl(s); paint(s); attachRemote(s);
 }
 
 // ---- incoming ----
