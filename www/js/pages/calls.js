@@ -253,7 +253,8 @@ async function toggleSpeaker(s) {
     console.warn('[NEXORA call audio route]', error);
     s.speaker = previous;
     paint(s);
-    toast('تعذّر تبديل مخرج الصوت؛ أعد المحاولة', 'err');
+    const detail = error?.message ? String(error.message).slice(0, 100) : 'سبب غير معروف';
+    toast('فشل مخرج الصوت: ' + detail, 'err');
   }
 }
 function toggleMute(s) { s.muted = !s.muted; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted)); sendCtl(s); paint(s); }
