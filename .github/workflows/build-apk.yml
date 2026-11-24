@@ -1,4 +1,4 @@
-name: Build M17 APK
+name: Build شبك NEXORA APK
 on:
   push:
     branches: [main]
@@ -42,7 +42,7 @@ jobs:
           R=android/app/src/main/res
           rm -rf $R/mipmap-anydpi-v26 $R/drawable-land* $R/drawable-port* 2>/dev/null || true
           for d in branding/res/mipmap-*; do mkdir -p $R/$(basename $d); cp $d/*.png $R/$(basename $d)/; done
-          sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">M17</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">M17</string>|' $R/values/strings.xml
+          sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">شبك NEXORA</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">شبك NEXORA</string>|' $R/values/strings.xml
           grep -n "app_name" $R/values/strings.xml
       - name: Add native Android call audio routing
         run: |
