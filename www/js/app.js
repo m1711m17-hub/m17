@@ -91,9 +91,7 @@ async function boot() {
   document.getElementById('splash')?.remove();
   document.body.classList.remove('in-chat');
   if (!state.me) {
-    authPage(root, async () => { await loadMe(); location.hash = '#/home'; boot();
-// Check for a newer NEXORA release after the first screen has had time to load.
-setTimeout(() => checkForUpdates(), 12000); });
+    authPage(root, async () => { await loadMe(); location.hash = '#/home'; boot(); });
     if (err) root.querySelector('.form-err').textContent = err;
     return;
   }
@@ -147,3 +145,5 @@ CapApp?.addListener?.('backButton', () => {
 });
 window.addEventListener('unhandledrejection', (e) => { if (e.reason && e.reason.message) console.warn(e.reason); });
 boot();
+// Check for a newer NEXORA release after the first screen has had time to load.
+setTimeout(() => checkForUpdates(), 12000);;
