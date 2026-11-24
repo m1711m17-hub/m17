@@ -13,7 +13,7 @@ import { settingsPage } from './pages/settings.js';
 import { adminPage } from './pages/admin.js';
 import { postPage } from './pages/postpage.js';
 import { callsPage, initCalls, stopCalls, inCall } from './pages/calls.js';
-import { openLive, endLiveOnExit } from './pages/live.js';
+import { openLive, endLiveOnExit, initInvites } from './pages/live.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -97,7 +97,7 @@ async function boot() {
   await route();
   refreshBadges();
   initPush();
-  startRealtime(); initCalls(); touchPresence();
+  startRealtime(); initCalls(); initInvites(); touchPresence();
   badgeTimer = setInterval(() => { if (!document.hidden) refreshBadges(); }, POLL_BADGE_MS);
 }
 
