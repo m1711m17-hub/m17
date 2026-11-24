@@ -9,7 +9,20 @@ import { stickerPanel } from './stickers.js';
 import { openCamera, cameraSupported } from './camera.js';
 import { placeCall } from './calls.js';
 
+function readCallEvent(body) {
+  const m = /^NEXORA_CALL\\|([^|]+)\\|(audio|video)\\|(completed|missed|rejected|cancelled)\\|(\\d+)$/.exec(String(body || ''));
+  return m ? { id: m[1], kind: m[2], outcome: m[3], duration: Number(m[4]) } : null;
+}
+function callEventPreview(e) {
+  if (!e) return '';
+  const kind = e.kind === 'video' ? 'مكالمة فيديو' : 'مكالمة صوتية';
+  const state = e.outcome === 'completed' ? 'تمت' : e.outcome === 'missed' ? 'فائتة' : e.outcome === 'rejected' ? 'مرفوضة' : 'ملغاة';
+  const duration = e.duration ? ' · ' + String(Math.floor(e.duration / 60)).padStart(2, '0') + ':' + String(e.duration % 60).padStart(2, '0') : '';
+  return '📞 ' + kind + ' · ' + state + duration;
+}
 function lastText(c) {
+  const call = readCallEvent(c.last_body);
+  if (call) return callEventPreview(call);
   if (c.last_kind === 'audio') return '🎙️ رسالة صوتية';
   if (c.last_kind === 'sticker') return '🙂 ملصق';
   if (c.last_kind === 'story_reply') return '↩️ رد على حالة' + (c.last_body ? ': ' + c.last_body : '');
@@ -144,13 +157,25 @@ export async function chatPage(root, params) {
   function bubble(m, pending = false) {
     const mine = m.sender_id === state.me.id;
     const kids = [];
-    if (m.story_id || m.story_preview) kids.push(h('div', { class: 'story-quote' }, m.story_preview ? h('img', { src: m.story_preview, alt: '' }) : null, h('span', null, mine ? 'رددت على حالة' : 'رد على حالتك')));
-    if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
-    if (m.audio_url) kids.push(voiceBubble(m, { mine }));
-    if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
-    if (m.body) kids.push(h('div', { class: 'b-text' }, m.body));
+    const call = readCallEvent(m.body);
+    if (call) {
+      const kind = call.kind === 'video' ? 'مكالمة فيديو' : 'مكالمة صوتية';
+      const outcome = call.outcome === 'completed' ? 'تمت المكالمة' : call.outcome === 'missed' ? (mine ? 'لم يتم الرد' : 'مكالمة فائتة') : call.outcome === 'rejected' ? 'تم رفض المكالمة' : 'تم إلغاء المكالمة';
+      const duration = call.duration ? String(Math.floor(call.duration / 60)).padStart(2, '0') + ':' + String(call.duration % 60).padStart(2, '0') : '';
+      kids.push(h('div', { class: 'call-event-card' },
+        h('span', { class: 'call-event-icon' }, icon(call.kind === 'video' ? 'video' : 'phone', 21)),
+        h('div', { class: 'call-event-copy' },
+          h('b', { class: 'call-event-title' }, kind + (mine ? ' صادرة' : ' واردة')),
+          h('span', { class: 'call-event-sub' }, outcome + (duration ? ' · ' + duration : '')))));
+    } else {
+      if (m.story_id || m.story_preview) kids.push(h('div', { class: 'story-quote' }, m.story_preview ? h('img', { src: m.story_preview, alt: '' }) : null, h('span', null, mine ? 'رددت على حالة' : 'رد على حالتك')));
+      if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
+      if (m.audio_url) kids.push(voiceBubble(m, { mine }));
+      if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
+      if (m.body) kids.push(h('div', { class: 'b-text' }, m.body));
+    }
     kids.push(h('div', { class: 'b-meta' }, pending ? '…' : hhmm(m.created_at), mine && m.read_at ? ' ✓✓' : ''));
-    return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (m.sticker ? ' bare' : '') + (m.audio_url ? ' has-voice' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
+    return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (call ? ' call-event' : '') + (m.sticker ? ' bare' : '') + (m.audio_url ? ' has-voice' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
   }
   function addMsgs(rows) {
     const near = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 160;
@@ -270,7 +295,7 @@ export async function chatPage(root, params) {
   const saved = draftGet(); if (saved) { input.value = saved; input.style.height = Math.min(120, input.scrollHeight) + 'px'; syncBtn(); }
 
   // ---- live updates ----
-  const onMsg = (e) => { const m = e.detail; if (m && m.sender_id === peer.id) { addMsgs([m]); setPeerKind('idle'); markRead(); } };
+  const onMsg = (e) => { const m = e.detail; if (m && ((m.sender_id === peer.id && m.receiver_id === state.me.id) || (m.sender_id === state.me.id && m.receiver_id === peer.id))) { addMsgs([m]); if (m.sender_id === peer.id) { setPeerKind('idle'); markRead(); } } };
   const onUpd = (e) => { const m = e.detail; if (m && m.receiver_id === peer.id) addMsgs([m]); };
   const onCatchUp = () => { poll(); refreshPresence(); };
   bus.addEventListener('rt:message', onMsg); bus.addEventListener('rt:message-update', onUpd);
