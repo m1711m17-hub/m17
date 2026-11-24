@@ -303,7 +303,10 @@ export function initCalls() {
   bus.addEventListener('rt:call-update', (e) => onCallUpdate(e.detail));
   bus.addEventListener('rt:signal', (e) => onSignal(e.detail));
   ['rt:ready', 'm17:resume'].forEach((n) => bus.addEventListener(n, checkIncoming));
-  ivCheck = setInterval(() => { if (!document.hidden && !rtLive()) checkIncoming(); }, 3000);
+  // Always poll incoming calls as a safety net. A Realtime websocket can be connected
+  // while Postgres changes for `calls` are not delivered (publication/RLS/channel issues).
+  // Without this fallback the caller stays on “calling” forever on the callee device.
+  ivCheck = setInterval(() => { if (!document.hidden) checkIncoming(); }, 3000);
   checkIncoming();
 }
 export function stopCalls() { if (cur) hangup(cur); }
