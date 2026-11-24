@@ -130,3 +130,4 @@ jobs:
         with:
           name: M17-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+# Rebuild after final call-event parser correction.
