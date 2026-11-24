@@ -14,6 +14,7 @@ import { adminPage } from './pages/admin.js';
 import { postPage } from './pages/postpage.js';
 import { callsPage, initCalls, stopCalls, inCall } from './pages/calls.js';
 import { openLive, endLiveOnExit, initInvites } from './pages/live.js';
+import { checkForUpdates } from './update.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -90,7 +91,9 @@ async function boot() {
   document.getElementById('splash')?.remove();
   document.body.classList.remove('in-chat');
   if (!state.me) {
-    authPage(root, async () => { await loadMe(); location.hash = '#/home'; boot(); });
+    authPage(root, async () => { await loadMe(); location.hash = '#/home'; boot();
+// Check for a newer NEXORA release after the first screen has had time to load.
+setTimeout(() => checkForUpdates(), 12000); });
     if (err) root.querySelector('.form-err').textContent = err;
     return;
   }
