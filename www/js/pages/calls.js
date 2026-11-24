@@ -236,7 +236,7 @@ function paint(s) {
   u.status.textContent = txt;
   if (s.diag && !connected && s.status === 'connecting') u.status.append(h('div', { class: 'small muted', dir: 'ltr' }, s.diag));
   u.flags.replaceChildren(...[s.peerMuted && connected ? h('span', null, icon('micoff', 16), ' الطرف الآخر كتم الصوت') : null, s.kind === 'video' && connected && !s.peerCam ? h('span', null, icon('videooff', 16), ' أغلق الكاميرا') : null].filter(Boolean));
-  const remoteVideoLive = s.kind === 'video' && connected && s.peerCam && s.remoteVideo.getVideoTracks().some((t) => t.readyState === 'live');
+  const remoteVideoLive = s.kind === 'video' && connected && s.peerCam && s.remoteVideo.getVideoTracks().some((t) => t.readyState === 'live' && !t.muted);
   u.el.classList.toggle('has-video', remoteVideoLive); u.el.classList.toggle('connected', connected);
   if (s.local && s.kind === 'video' && s.camOn) { if (!u.local.srcObject) { u.local.srcObject = new MediaStream(s.local.getVideoTracks()); u.local.muted = true; u.local.play?.().catch(() => {}); } u.local.hidden = false; u.local.classList.toggle('mirror', s.facing === 'user'); } else u.local.hidden = true;
   const c = []; const ended = s.ended;
