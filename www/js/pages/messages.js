@@ -1,4 +1,4 @@
-import { h, icon, avatar, clear, toast, timeAgo, hhmm, dayLabel, sheet, actionSheet } from '../lib/dom.js';
+import { h, icon, avatar, clear, toast, timeAgo, hhmm, dayLabel, sheet, actionSheet, confirmBox } from '../lib/dom.js';
 import { sb, state, uploadMedia, uploadAudio, refreshBadges, PROFILE_MINI, feature, bus, rt, rtLive, pairName, presenceOf, presenceMany, watchPresence } from '../api.js';
 import { POLL_CHAT_MS } from '../config.js';
 import { headerBar, bellButton } from './home.js';
@@ -23,6 +23,7 @@ function callEventPreview(e) {
 function lastText(c) {
   const call = readCallEvent(c.last_body);
   if (call) return callEventPreview(call);
+  if (c.last_kind === 'deleted') return '🚫 تم حذف هذه الرسالة';
   if (c.last_kind === 'audio') return '🎙️ رسالة صوتية';
   if (c.last_kind === 'sticker') return '🙂 ملصق';
   if (c.last_kind === 'story_reply') return '↩️ رد على حالة' + (c.last_body ? ': ' + c.last_body : '');
@@ -98,11 +99,15 @@ export async function chatPage(root, params) {
   const micBtn = h('button', { class: 'icon-btn accent mic', type: 'button', 'aria-label': 'تسجيل رسالة صوتية (اضغط مطولاً)' }, icon('mic', 22));
   const recBar = h('div', { class: 'rec-bar', hidden: true });
   const statusEl = h('div', { class: 'chat-status muted small' });
+  const replyBar = h('div', { class: 'reply-bar', hidden: true });
+  const selBar = h('div', { class: 'sel-bar', hidden: true });
+  const quoteCache = new Map();
+  let replyTo = null, selMode = false; const sel = new Set();
   let seen = new Map(), lastDay = '', stop = false, busy = false, peerKind = 'idle', peerKindTimer = null, pres = null;
 
   let chatBar;
   root.classList.add('chat-root');
-  root.append(h('header', { class: 'topbar' },
+  root.append(selBar, h('header', { class: 'topbar' },
     h('button', { class: 'icon-btn', type: 'button', onclick: () => (location.hash = '#/messages'), 'aria-label': 'رجوع' }, icon('back', 22)),
     h('a', { class: 'row gap grow', href: `#/u/${peer.username}` }, h('span', { class: 'av-wrap' }, avatar(peer, 38), h('i', { class: 'online-dot', hidden: true })), h('div', { class: 'grow' }, h('b', null, peer.display_name || peer.username), statusEl)),
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'اتصال صوتي', onclick: () => placeCall(peer, 'audio') }, icon('phone', 22)),
@@ -114,6 +119,7 @@ export async function chatPage(root, params) {
     ]) }, icon('more', 22))),
     msgs,
     panel,
+    replyBar,
     chatBar = h('div', { class: 'chat-bar' }, attach, cameraSupported() ? camBtn : null, stickBtn, input, sendBtn, micBtn, recBar, fileIn));
 
   // ---- status line: typing / recording / online / last seen ----
@@ -154,10 +160,49 @@ export async function chatPage(root, params) {
 
   // ---- bubbles ----
   function stickerParts(s) { const [emoji, label, color] = String(s).split('|'); return { emoji, label, color }; }
+  function previewOf(m) {
+    if (!m) return 'رسالة';
+    if (m.deleted_all) return '🚫 تم حذف هذه الرسالة';
+    const call = readCallEvent(m.body); if (call) return callEventPreview(call);
+    if (m.audio_url) return '🎙️ رسالة صوتية';
+    if (m.sticker) return '🙂 ملصق' + (stickerParts(m.sticker).label ? ' · ' + stickerParts(m.sticker).label : '');
+    if (m.body) return m.body.length > 90 ? m.body.slice(0, 90) + '…' : m.body;
+    return m.media_type === 'video' ? '🎬 فيديو' : '🖼️ صورة';
+  }
+  const nameOf = (m) => (m.sender_id === state.me.id ? 'أنت' : (peer.display_name || peer.username));
+  function paintQuote(el, q) {
+    el.replaceChildren(h('b', null, q ? nameOf(q) : 'رسالة'), h('span', null, q ? previewOf(q) : q === undefined ? '…' : 'الرسالة الأصلية غير متاحة'));
+    el.classList.toggle('gone', q === null || !!q?.deleted_all);
+    if (q && !q.deleted_all && q.media_url && q.media_type !== 'video') el.append(h('img', { src: q.media_url, alt: '' }));
+  }
+  function jumpTo(id) {
+    const el = msgs.querySelector(`[data-id="${id}"]`);
+    if (!el) return toast('الرسالة الأصلية قديمة وغير محمّلة', 'err');
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
+  }
+  async function fillQuotes(rows) {
+    const need = [...new Set(rows.filter((m) => m.reply_to && !seen.has(m.reply_to) && !quoteCache.has(m.reply_to)).map((m) => m.reply_to))];
+    if (need.length) {
+      try { (await sb.from('messages').select('*').in('id', need)).forEach((q) => quoteCache.set(q.id, q)); } catch {}
+      need.forEach((id) => { if (!quoteCache.has(id)) quoteCache.set(id, null); });
+    }
+    msgs.querySelectorAll('.reply-quote[data-q]').forEach((el) => { paintQuote(el, seen.get(el.dataset.q) || quoteCache.get(el.dataset.q)); });
+  }
   function bubble(m, pending = false) {
+    const el = bubbleInner(m, pending); wireBubble(el, m, pending); return el;
+  }
+  function bubbleInner(m, pending = false) {
     const mine = m.sender_id === state.me.id;
     const kids = [];
     const call = readCallEvent(m.body);
+    if (m.deleted_all) {
+      kids.push(h('div', { class: 'b-text deleted-note' }, '🚫 تم حذف هذه الرسالة'));
+      kids.push(h('div', { class: 'b-meta' }, hhmm(m.created_at)));
+      return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + ' deleted', 'data-id': m.id }, ...kids);
+    }
+    if (m.forwarded) kids.push(h('div', { class: 'fwd-label' }, icon('forward', 13), ' معاد توجيهها'));
+    if (m.reply_to) { const qe = h('div', { class: 'reply-quote', 'data-q': m.reply_to, onclick: (e) => { e.stopPropagation(); if (!selMode) jumpTo(m.reply_to); } }); paintQuote(qe, seen.get(m.reply_to) || quoteCache.get(m.reply_to)); kids.push(qe); }
     if (call) {
       const kind = call.kind === 'video' ? 'مكالمة فيديو' : 'مكالمة صوتية';
       const outcome = call.outcome === 'completed' ? 'تمت المكالمة' : call.outcome === 'missed' ? (mine ? 'لم يتم الرد' : 'مكالمة فائتة') : call.outcome === 'rejected' ? 'تم رفض المكالمة' : 'تم إلغاء المكالمة';
@@ -177,11 +222,142 @@ export async function chatPage(root, params) {
     kids.push(h('div', { class: 'b-meta' }, pending ? '…' : hhmm(m.created_at), mine && m.read_at ? ' ✓✓' : ''));
     return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (call ? ' call-event' : '') + (m.sticker ? ' bare' : '') + (m.audio_url ? ' has-voice' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
   }
+
+  // ---- message actions: long-press menu, reply, forward, delete, copy, multi-select ----
+  const isReal = (m) => m && !String(m.id).startsWith('tmp');
+  const copyText = async (t) => {
+    try { await navigator.clipboard.writeText(t); } catch { const ta = h('textarea', { style: { position: 'fixed', opacity: 0 } }); ta.value = t; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch {} ta.remove(); }
+    toast('تم النسخ');
+  };
+  function wireBubble(el, m, pending) {
+    if (pending || !isReal(m)) return;
+    let timer = null, sx0 = 0, sy0 = 0, fired = false;
+    const cancel = () => { clearTimeout(timer); timer = null; el.classList.remove('pressing'); };
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button > 0) return;
+      fired = false; sx0 = e.clientX; sy0 = e.clientY; el.classList.add('pressing');
+      timer = setTimeout(() => { fired = true; cancel(); try { navigator.vibrate?.(15); } catch {} if (selMode) toggleSel(m.id); else openMenu(seen.get(m.id) || m); }, 430);
+    });
+    el.addEventListener('pointermove', (e) => { if (timer && Math.hypot(e.clientX - sx0, e.clientY - sy0) > 10) cancel(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((n) => el.addEventListener(n, cancel));
+    el.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+    el.addEventListener('click', (e) => { if (fired) { fired = false; e.preventDefault(); e.stopPropagation(); return; } if (selMode) { e.preventDefault(); e.stopPropagation(); toggleSel(m.id); } }, true);
+  }
+  function openMenu(m) {
+    const mine = m.sender_id === state.me.id, call = !!readCallEvent(m.body);
+    if (m.deleted_all) return actionSheet('خيارات الرسالة', [{ label: 'حذف لديّ', icon: 'trash', danger: true, run: () => delMine([m.id]) }, { label: 'تحديد', icon: 'selectall', run: () => enterSel(m.id) }]);
+    actionSheet('خيارات الرسالة', [
+      !call ? { label: 'رد', icon: 'reply', run: () => startReply(m) } : null,
+      !call ? { label: 'إعادة توجيه', icon: 'forward', run: () => forwardDialog([m]) } : null,
+      m.body && !call ? { label: 'نسخ', icon: 'copy', run: () => copyText(m.body) } : null,
+      { label: 'تحديد', icon: 'selectall', run: () => enterSel(m.id) },
+      { label: 'حذف لديّ', icon: 'trash', danger: true, run: () => delMine([m.id]) },
+      mine ? { label: 'حذف لدى الجميع', icon: 'trash', danger: true, run: () => delAll([m.id]) } : null,
+    ]);
+  }
+  // reply
+  function startReply(m) {
+    replyTo = m; replyBar.hidden = false;
+    replyBar.replaceChildren(h('span', { class: 'rb-ic' }, icon('reply', 18)), h('div', { class: 'rb-txt' }, h('b', null, nameOf(m)), h('span', null, previewOf(m))),
+      m.media_url && m.media_type !== 'video' ? h('img', { src: m.media_url, alt: '' }) : null,
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إلغاء الرد', onclick: cancelReply }, icon('close', 18)));
+    input.focus({ preventScroll: true });
+  }
+  function cancelReply() { replyTo = null; replyBar.hidden = true; replyBar.replaceChildren(); }
+  // selection
+  function enterSel(id) { selMode = true; root.classList.add('sel-on'); msgs.classList.add('selecting'); selBar.hidden = false; panel.close?.(); toggleSel(id, true); }
+  function exitSel() { selMode = false; sel.clear(); root.classList.remove('sel-on'); msgs.classList.remove('selecting'); selBar.hidden = true; msgs.querySelectorAll('.bubble.selected').forEach((b) => b.classList.remove('selected')); }
+  function toggleSel(id, force) {
+    const el = msgs.querySelector(`[data-id="${id}"]`); if (!el) return;
+    const on = force ?? !sel.has(id);
+    on ? sel.add(id) : sel.delete(id); el.classList.toggle('selected', on);
+    if (!sel.size) return exitSel();
+    paintSelBar();
+  }
+  const selRows = () => [...sel].map((id) => seen.get(id)).filter(Boolean).sort((x, y) => new Date(x.created_at) - new Date(y.created_at));
+  function paintSelBar() {
+    const rows = selRows(), allMine = rows.every((r) => r.sender_id === state.me.id), canFwd = rows.every((r) => !r.deleted_all && !readCallEvent(r.body)), texts = rows.filter((r) => r.body && !r.deleted_all);
+    selBar.replaceChildren(
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إلغاء التحديد', onclick: exitSel }, icon('close', 22)),
+      h('b', { class: 'grow' }, `${rows.length} محددة`),
+      texts.length ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'نسخ', onclick: () => { copyText(texts.map((r) => r.body).join('\n')); exitSel(); } }, icon('copy', 22)) : null,
+      canFwd ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إعادة توجيه', onclick: () => forwardDialog(rows) }, icon('forward', 22)) : null,
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'حذف', onclick: () => deleteChoice(rows, allMine) }, icon('trash', 22)));
+  }
+  // delete
+  function removeEl(id) { msgs.querySelector(`[data-id="${id}"]`)?.remove(); seen.delete(id); }
+  async function delMine(ids) {
+    ids = ids.filter((i) => isReal({ id: i }));
+    if (!(await confirmBox(ids.length > 1 ? `حذف ${ids.length} رسائل من محادثتك فقط؟` : 'حذف هذه الرسالة من محادثتك فقط؟ سيبقى الطرف الآخر يراها.', 'حذف لديّ', true))) return;
+    try { await sb.rpc('hide_messages', { p_ids: ids }); ids.forEach(removeEl); exitSel(); refreshBadges(); } catch (e) { toast(e.message || 'تعذّر الحذف', 'err'); }
+  }
+  async function delAll(ids) {
+    ids = ids.filter((i) => isReal({ id: i }) && seen.get(i)?.sender_id === state.me.id);
+    if (!ids.length) return toast('يمكنك الحذف لدى الجميع لرسائلك فقط', 'err');
+    if (!(await confirmBox(ids.length > 1 ? `سيتم حذف ${ids.length} رسائل لدى الجميع ولا يمكن التراجع. متأكد؟` : 'سيتم حذف هذه الرسالة لدى الجميع ولا يمكن التراجع. متأكد؟', 'حذف لدى الجميع', true))) return;
+    try {
+      const n = await sb.rpc('delete_messages_all', { p_ids: ids });
+      if (!n) toast('لم تُحذف أي رسالة', 'err');
+      ids.forEach((i) => { const old = seen.get(i); if (old) markDeleted({ ...old, deleted_all: true, body: '', media_url: null, audio_url: null, sticker: null }); });
+      exitSel();
+    } catch (e) { toast(e.message || 'تعذّر الحذف', 'err'); }
+  }
+  function deleteChoice(rows, allMine) {
+    const ids = rows.map((r) => r.id);
+    actionSheet(`حذف ${rows.length} ${rows.length > 1 ? 'رسائل' : 'رسالة'}`, [
+      { label: 'حذف لديّ', icon: 'trash', danger: true, run: () => delMine(ids) },
+      allMine ? { label: 'حذف لدى الجميع', icon: 'trash', danger: true, run: () => delAll(ids) } : null,
+    ]);
+  }
+  function markDeleted(m) {
+    const old = seen.get(m.id); seen.set(m.id, { ...(old || {}), ...m });
+    const el = msgs.querySelector(`[data-id="${m.id}"]`); if (el) { const n = bubble(seen.get(m.id)); if (sel.has(m.id)) sel.delete(m.id); el.replaceWith(n); }
+    msgs.querySelectorAll('.reply-quote[data-q="' + m.id + '"]').forEach((q) => paintQuote(q, seen.get(m.id)));
+    if (selMode && !sel.size) exitSel(); else if (selMode) paintSelBar();
+  }
+  // forward
+  async function forwardDialog(rows) {
+    rows = rows.filter((r) => !r.deleted_all && !readCallEvent(r.body));
+    if (!rows.length) return toast('لا يمكن إعادة توجيه هذه الرسائل', 'err');
+    let convs = []; try { convs = await sb.rpc('my_conversations'); } catch {}
+    const chosen = new Map();
+    sheet('إعادة توجيه إلى', (body, close) => {
+      const q = h('input', { class: 'input', placeholder: 'ابحث في محادثاتك...' });
+      const list = h('div', { class: 'fwd-list' });
+      const go = h('button', { class: 'btn primary fwd-go', type: 'button', disabled: true }, 'إرسال');
+      const paint = () => {
+        const t = q.value.trim().toLowerCase(); clear(list);
+        const shown = convs.filter((c) => !t || (c.display_name || '').toLowerCase().includes(t) || (c.username || '').toLowerCase().includes(t));
+        if (!shown.length) list.append(h('div', { class: 'empty small' }, 'لا توجد محادثات مطابقة'));
+        shown.forEach((c) => list.append(h('button', { class: 'user-row fwd-row' + (chosen.has(c.partner_id) ? ' on' : ''), type: 'button', onclick: () => { chosen.has(c.partner_id) ? chosen.delete(c.partner_id) : chosen.set(c.partner_id, c); go.disabled = !chosen.size; go.textContent = chosen.size ? `إرسال (${chosen.size})` : 'إرسال'; paint(); } },
+          avatar(c, 40), h('b', { class: 'grow' }, c.display_name || c.username), h('span', { class: 'fwd-check' }, chosen.has(c.partner_id) ? icon('check', 16) : null))));
+      };
+      q.oninput = paint; paint();
+      go.onclick = async () => {
+        go.disabled = true; go.textContent = 'جارٍ الإرسال...'; let ok = 0, bad = 0;
+        for (const c of chosen.values()) {
+          try {
+            for (const r of rows) {
+              const row = { sender_id: state.me.id, receiver_id: c.partner_id, body: r.body || '', forwarded: true };
+              ['media_url', 'media_type', 'audio_url', 'audio_ms', 'audio_wave', 'sticker'].forEach((k) => { if (r[k] != null) row[k] = r[k]; });
+              await sb.from('messages').insert(row);
+            }
+            ok++;
+          } catch { bad++; }
+        }
+        close(); exitSel();
+        toast(bad ? `أُعيد التوجيه إلى ${ok} وفشل ${bad}` : `تمت إعادة التوجيه إلى ${ok} ${ok > 1 ? 'محادثات' : 'محادثة'}`, bad ? 'err' : undefined);
+        if (chosen.has(peer.id)) poll();
+      };
+      body.append(q, list, go);
+    }, { full: true });
+  }
+
   function addMsgs(rows) {
     const near = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 160;
     let added = false;
     for (const m of rows) {
-      if (seen.has(m.id)) { const old = seen.get(m.id); if (!old.read_at && m.read_at) { old.read_at = m.read_at; const el = msgs.querySelector(`[data-id="${m.id}"] .b-meta`); if (el) el.textContent = hhmm(m.created_at) + ' ✓✓'; } continue; }
+      if (seen.has(m.id)) { const old = seen.get(m.id); if (m.deleted_all && !old.deleted_all) { markDeleted(m); continue; } if (!old.read_at && m.read_at) { old.read_at = m.read_at; const el = msgs.querySelector(`[data-id="${m.id}"] .b-meta`); if (el) el.textContent = hhmm(m.created_at) + ' ✓✓'; } continue; }
       seen.set(m.id, m); added = true;
       msgs.querySelectorAll('.pending').forEach((p) => p.remove());
       const d = dayLabel(m.created_at);
@@ -189,6 +365,7 @@ export async function chatPage(root, params) {
       msgs.append(bubble(m));
     }
     if (added && (near || seen.size === rows.length)) msgs.scrollTop = msgs.scrollHeight;
+    if (rows.some((r) => r.reply_to)) fillQuotes(rows);
   }
   async function markRead() {
     try { await sb.from('messages').update({ read_at: new Date().toISOString() }).eq('sender_id', peer.id).eq('receiver_id', state.me.id).is('read_at', 'null'); refreshBadges(); } catch {}
@@ -210,15 +387,16 @@ export async function chatPage(root, params) {
     const body = noText ? '' : input.value.trim();
     if (!body && !extra.media_url && !extra.audio_url && !extra.sticker) return;
     if (!feature('messages')) return toast('الرسائل متوقفة حالياً', 'err');
-    const tmp = bubble({ id: 'tmp' + Date.now() + Math.random(), sender_id: state.me.id, body, ...extra, created_at: new Date().toISOString() }, true);
+    const replying = replyTo; if (replying) { quoteCache.set(replying.id, replying); cancelReply(); }
+    const tmp = bubble({ id: 'tmp' + Date.now() + Math.random(), sender_id: state.me.id, body, ...extra, reply_to: replying?.id, created_at: new Date().toISOString() }, true);
     tmp.classList.add('tmp'); msgs.append(tmp); msgs.scrollTop = msgs.scrollHeight;
     if (!noText) { input.value = ''; input.style.height = ''; draftSet(''); syncBtn(); }
     clearTimeout(idleTimer); sendStatus('sending');
     try {
       const real = resolve ? await resolve() : extra;
-      await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: peer.id, body, ...real });
+      await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: peer.id, body, ...real, ...(replying ? { reply_to: replying.id } : {}) });
       await poll(); msgs.scrollTop = msgs.scrollHeight;
-    } catch (e) { tmp.remove(); if (body) { input.value = body; draftSet(body); syncBtn(); } toast(e.message, 'err'); }
+    } catch (e) { tmp.remove(); if (body) { input.value = body; draftSet(body); syncBtn(); } if (replying) startReply(replying); toast(e.message, 'err'); }
     sendStatus('idle');
     if (!noText && !extra.media_url) input.focus({ preventScroll: true });
   }
@@ -296,7 +474,7 @@ export async function chatPage(root, params) {
 
   // ---- live updates ----
   const onMsg = (e) => { const m = e.detail; if (m && ((m.sender_id === peer.id && m.receiver_id === state.me.id) || (m.sender_id === state.me.id && m.receiver_id === peer.id))) { addMsgs([m]); if (m.sender_id === peer.id) { setPeerKind('idle'); markRead(); } } };
-  const onUpd = (e) => { const m = e.detail; if (m && m.receiver_id === peer.id) addMsgs([m]); };
+  const onUpd = (e) => { const m = e.detail; if (m && ((m.sender_id === peer.id && m.receiver_id === state.me.id) || (m.sender_id === state.me.id && m.receiver_id === peer.id))) addMsgs([m]); };
   const onCatchUp = () => { poll(); refreshPresence(); };
   bus.addEventListener('rt:message', onMsg); bus.addEventListener('rt:message-update', onUpd);
   ['rt:ready', 'm17:resume'].forEach((n) => bus.addEventListener(n, onCatchUp));

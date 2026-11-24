@@ -107,6 +107,7 @@ export function startRealtime() {
   inbox = rt.channel('inbox-' + me, { pg: [
     { event: 'INSERT', table: 'messages', filter: `receiver_id=eq.${me}` },
     { event: 'UPDATE', table: 'messages', filter: `sender_id=eq.${me}` },
+    { event: 'UPDATE', table: 'messages', filter: `receiver_id=eq.${me}` },
     { event: 'INSERT', table: 'notifications', filter: `user_id=eq.${me}` },
     { event: 'INSERT', table: 'calls', filter: `callee_id=eq.${me}` },
     { event: 'UPDATE', table: 'calls', filter: `caller_id=eq.${me}` },
