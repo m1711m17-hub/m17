@@ -10,7 +10,7 @@ import { openCamera, cameraSupported } from './camera.js';
 import { placeCall } from './calls.js';
 
 function readCallEvent(body) {
-  const m = /^NEXORA_CALL\\|([^|]+)\\|(audio|video)\\|(completed|missed|rejected|cancelled)\\|(\\d+)$/.exec(String(body || ''));
+  const m = /^NEXORA_CALL\|([^|]+)\|(audio|video)\|(completed|missed|rejected|cancelled)\|(\d+)$/.exec(String(body || ''));
   return m ? { id: m[1], kind: m[2], outcome: m[3], duration: Number(m[4]) } : null;
 }
 function callEventPreview(e) {
