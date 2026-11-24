@@ -59,7 +59,7 @@ export async function placeCall(peer, kind) {
 }
 
 function newSession({ callId, peer, kind, role }) {
-  const s = { callId, peer, kind, role, pc: null, local: null, remote: new MediaStream(), muted: false, camOn: kind === 'video', facing: 'user', status: role === 'caller' ? 'calling' : 'ringing',
+  const s = { callId, peer, kind, role, pc: null, local: null, remote: new MediaStream(), remoteAudio: new MediaStream(), remoteVideo: new MediaStream(), muted: false, camOn: kind === 'video', facing: 'user', status: role === 'caller' ? 'calling' : 'ringing',
     connectedAt: 0, timers: [], stopRing: null, ended: false, peerCam: true, peerMuted: false, offer: null, pendingIce: [], remoteSet: false, speaker: kind === 'video', ctl: null, vSender: null, ui: {}, lostTimer: null };
   cur = s; return s;
 }
@@ -68,7 +68,7 @@ function setupPc(s) {
   s.cands = { host: 0, srflx: 0, relay: 0 };
   const pc = s.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
   pc.onicecandidate = (e) => { if (e.candidate) { const ty = e.candidate.type; if (ty in s.cands) s.cands[ty]++; } if (e.candidate) sendSignal(s, 'ice', e.candidate.toJSON()); };
-  pc.ontrack = (e) => { s.remote.addTrack(e.track); e.track.onunmute = () => paint(s); paint(s); attachRemote(s); };
+  pc.ontrack = (e) => { const target = e.track.kind === 'audio' ? s.remoteAudio : s.remoteVideo; if (!target.getTracks().some((t) => t.id === e.track.id)) target.addTrack(e.track); e.track.onunmute = () => { attachRemote(s); paint(s); }; attachRemote(s); paint(s); };
   pc.oniceconnectionstatechange = () => { if (!s.ended && ['connected', 'completed'].includes(pc.iceConnectionState)) onConnected(s); };
   pc.onconnectionstatechange = () => {
     if (s.ended) return;
@@ -90,7 +90,7 @@ function setupPc(s) {
   ch.onopen = () => sendCtl(s);
 }
 const sendCtl = (s) => { try { if (s.ctl?.readyState === 'open') s.ctl.send(JSON.stringify({ cam: s.kind === 'video' ? s.camOn : false, muted: s.muted })); } catch {} };
-function attachRemote(s) { const v = s.ui.remote; if (v && v.srcObject !== s.remote) { v.srcObject = s.remote; v.play?.().catch(() => {}); } }
+function attachRemote(s) { const v = s.ui.remote, a = s.ui.remoteAudio; if (v && v.srcObject !== s.remoteVideo) { v.srcObject = s.remoteVideo; v.muted = true; v.playsInline = true; v.play?.().catch(() => {}); } if (a && a.srcObject !== s.remoteAudio) { a.srcObject = s.remoteAudio; a.muted = false; a.volume = 1; a.play?.().catch(() => {}); } else if (a && a.paused && s.remoteAudio.getAudioTracks().length) a.play?.().catch(() => {}); }
 
 function onConnected(s) {
   if (s.connectedAt) { s.weak = false; s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); paint(s); return; }
@@ -181,7 +181,7 @@ async function hangup(s, why) {
 function finish(s, text) {
   if (s.ended) return; s.ended = true; s.status = 'ended'; s.statusText = text;
   s.timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); clearTimeout(s.lostTimer); s.stopRing?.();
-  try { s.pc?.close(); } catch {} try { s.local?.getTracks().forEach((t) => t.stop()); } catch {}
+  try { s.pc?.close(); } catch {} try { s.ui.remote?.pause?.(); s.ui.remoteAudio?.pause?.(); s.ui.remote.srcObject = null; s.ui.remoteAudio.srcObject = null; } catch {} try { s.local?.getTracks().forEach((t) => t.stop()); } catch {}
   paint(s); setTimeout(() => { s.ui.el?.remove(); if (cur === s) cur = null; bus.dispatchEvent(new CustomEvent('m17:call-ended')); }, 900);
   if (cur === s) cur = null; // free immediately so a new call can start; UI fades out
 }
@@ -189,13 +189,14 @@ function finish(s, text) {
 // ---- UI ----
 const ctlBtn = (cls, label, ic, fn, on) => h('button', { class: 'cs-btn ' + cls + (on ? ' on' : ''), type: 'button', 'aria-label': label, onclick: fn }, icon(ic, 26), h('span', null, label));
 function mountUI(s) {
-  const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true });
+  const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true }); remote.muted = true;
+  const remoteAudio = h('audio', { class: 'cs-audio', autoplay: true }); remoteAudio.muted = false; remoteAudio.volume = 1;
   const local = h('video', { class: 'cs-local', playsinline: true, autoplay: true }); local.muted = true; local.volume = 0;
   const name = h('h2', null, s.peer.display_name || s.peer.username), status = h('div', { class: 'cs-status' }), flags = h('div', { class: 'cs-flags' });
   const info = h('div', { class: 'cs-info' }, h('div', { class: 'cs-av' }, avatar(s.peer, 120)), name, status, flags);
   const controls = h('div', { class: 'cs-controls' });
-  const el = h('div', { class: 'call-screen ' + s.kind, role: 'dialog' }, remote, local, info, controls);
-  s.ui = { el, remote, local, status, flags, controls, info };
+  const el = h('div', { class: 'call-screen ' + s.kind, role: 'dialog' }, remote, remoteAudio, local, info, controls);
+  s.ui = { el, remote, remoteAudio, local, status, flags, controls, info };
   document.body.append(el);
   el.addEventListener('m17:back', () => { /* back button never silently drops a call */ toast('اضغط زر إنهاء المكالمة لإنهائها'); });
   paint(s);
