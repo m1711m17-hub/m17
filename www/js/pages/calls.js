@@ -5,7 +5,7 @@ import { ICE_SERVERS, refreshIce } from '../config.js';
 import { headerBar } from './home.js';
 
 let cur = null;
-const seenSig = new Set(); const handled = new Set();
+const seenSig = new Set(); const handled = new Set(); const pendingIncoming = new Set();
 export const inCall = () => !!cur;
 const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
@@ -100,15 +100,22 @@ function onConnected(s) {
 
 // ---- incoming ----
 async function onIncoming(call) {
-  if (!call || call.status !== 'ringing' || cur || handled.has(call.id) || call.callee_id !== state.me?.id) return;
+  if (!call || call.status !== 'ringing' || cur || handled.has(call.id) || pendingIncoming.has(call.id) || call.callee_id !== state.me?.id) return;
   if (Date.now() - new Date(call.created_at).getTime() > 46000) return;
-  handled.add(call.id);
-  let peer = null; try { peer = await sb.from('profiles').select(PROFILE_MINI).eq('id', call.caller_id).one(); } catch {}
-  if (cur) return; // another call opened meanwhile
-  const s = newSession({ callId: call.id, peer: peer || { id: call.caller_id, username: '?', display_name: 'مستخدم' }, kind: call.kind, role: 'callee' });
-  mountUI(s); s.stopRing = ringer('in');
-  s.timers.push(setTimeout(() => { if (cur === s && s.status === 'ringing') finish(s, 'فاتتك المكالمة'); }, 46000));
-  startTick(s);
+  // Profile lookup is asynchronous; reserve this call while it is in flight so
+  // realtime + polling cannot open duplicate incoming-call screens.
+  pendingIncoming.add(call.id);
+  try {
+    let peer = null; try { peer = await sb.from('profiles').select(PROFILE_MINI).eq('id', call.caller_id).one(); } catch {}
+    if (cur || handled.has(call.id)) return; // another call/session won the race
+    handled.add(call.id);
+    const s = newSession({ callId: call.id, peer: peer || { id: call.caller_id, username: '?', display_name: 'مستخدم' }, kind: call.kind, role: 'callee' });
+    mountUI(s); s.stopRing = ringer('in');
+    s.timers.push(setTimeout(() => { if (cur === s && s.status === 'ringing') finish(s, 'فاتتك المكالمة'); }, 46000));
+    startTick(s);
+  } finally {
+    pendingIncoming.delete(call.id);
+  }
 }
 async function acceptCall(s) {
   if (s.status !== 'ringing') return;
