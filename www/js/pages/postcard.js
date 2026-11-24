@@ -1,4 +1,4 @@
-import { h, icon, avatar, toast, sheet, actionSheet, confirmBox, timeAgo, compact, badge, clear } from '../lib/dom.js';
+import { h, icon, avatar, toast, sheet, actionSheet, confirmBox, timeAgo, compact, badge, verifiedBadge, clear } from '../lib/dom.js';
 import { sb, state, hasPerm, feature, POST_SELECT, PROFILE_MINI } from '../api.js';
 import { arabicError } from '../lib/supabase-lite.js';
 
@@ -41,7 +41,7 @@ export async function renderComments(container, postId, onCount) {
     rows.forEach((c) => list.append(h('div', { class: 'comment' },
       h('a', { href: `#/u/${c.author.username}` }, avatar(c.author, 36)),
       h('div', { class: 'c-body' },
-        h('div', { class: 'c-head' }, h('b', null, c.author.display_name || c.author.username), badge(c.author.role), h('span', { class: 'muted' }, timeAgo(c.created_at))),
+        h('div', { class: 'c-head' }, h('b', null, c.author.display_name || c.author.username), badge(c.author.role), verifiedBadge(c.author.is_verified), h('span', { class: 'muted' }, timeAgo(c.created_at))),
         h('div', { class: 'c-text' }, c.body)),
       h('button', { class: 'icon-btn sm', 'aria-label': 'خيارات', onclick: () => actionSheet('التعليق', [
         c.author_id === state.me.id && { label: 'حذف تعليقي', icon: 'trash', danger: true, run: async () => { try { await sb.from('comments').delete().eq('id', c.id); await load(); onCount?.(-1); } catch (e) { toast(e.message, 'err'); } } },
@@ -118,7 +118,7 @@ export function postCard(post, { onDeleted, detail = false } = {}) {
   card.append(
     h('header', { class: 'p-head' },
       h('a', { href: `#/u/${a.username}`, class: 'p-user' }, avatar(a, 42),
-        h('div', null, h('div', { class: 'p-name' }, a.display_name || a.username, badge(a.role)), h('div', { class: 'muted small' }, `@${a.username} · ${timeAgo(post.created_at)}`))),
+        h('div', null, h('div', { class: 'p-name' }, a.display_name || a.username, badge(a.role), verifiedBadge(a.is_verified)), h('div', { class: 'muted small' }, `@${a.username} · ${timeAgo(post.created_at)}`))),
       h('button', { class: 'icon-btn', 'aria-label': 'خيارات', onclick: menu }, icon('more', 20))),
     post.body && h('div', { class: 'p-body', onclick: () => !detail && go(`#/post/${post.id}`) }, post.body),
     media,
