@@ -534,3 +534,8 @@ body.in-chat .tabbar{display:none}
 .lx-sidetools{position:absolute;z-index:8;left:12px;top:30%;display:flex;flex-direction:column;gap:12px}
 .lx-sbtn{width:46px;height:46px;border-radius:50%;background:rgba(20,22,34,.65);border:1.5px solid rgba(255,255,255,.28);color:#fff;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 .lx-sbtn.off{background:#e5384f;border-color:#e5384f}
+
+/* Owner-approved verification: distinctive red check mark */
+.verified-badge{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;margin-inline-start:5px;border-radius:50%;background:#e32636;color:#fff;font:800 12px/1 system-ui;vertical-align:middle;box-shadow:0 0 10px rgba(227,38,54,.28)}
+.verify-request-wrap{margin:12px 0}
+.verify-admin-row{align-items:flex-start}
