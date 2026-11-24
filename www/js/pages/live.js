@@ -190,7 +190,7 @@ function pickPeople(sent, onPick) {
 const newParams = () => ({ zoom: 1, ox: 0, oy: 0, rot: 0, bright: 1, contrast: 1 });
 
 // ============ HOST ============
-export function openLive() {
+function openLiveInner() {
   if (hostSession || watchSession) return toast('أنت داخل بث مباشر حالياً', 'err');
   if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) return toast('البث المباشر غير مدعوم على هذا الجهاز', 'err');
   const s = hostSession = { id: null, stream: null, facing: 'user', muted: false, peers: new Map(), timers: [], t0: 0, ended: false, lastSig: 0, mode: 'camera', opts: { comments: true, gifts: true }, guests: new Map(), queue: [], sentInv: new Set(), actx: null, img: null, imgUrl: null, params: newParams(), canvas: null, ov: null };
@@ -395,6 +395,17 @@ export function openLive() {
     if (text) toast(text);
   }
   paintOpts(); paintThumb(); setMode('camera');
+}
+// never leave the user on a blank screen: any failure while opening/running the live screen is shown on screen
+export function openLive() {
+  const show = (e) => {
+    const el = document.querySelector('.live-screen'); const txt = String(e?.message || e || 'خطأ غير معروف').slice(0, 300);
+    const box = h('div', { class: 'lv-errbox' }, h('b', null, 'حدث خطأ في شاشة البث'), h('div', { dir: 'ltr' }, txt), h('button', { class: 'btn primary', type: 'button', onclick: () => { try { hostSession && (hostSession.ended = true); hostSession?.stream?.getTracks().forEach((t) => t.stop()); } catch {} hostSession = null; (el || box).remove(); box.remove(); } }, 'إغلاق'));
+    (el || document.body).append(box);
+  };
+  const onErr = (ev) => { if (hostSession) show(ev.error || ev.reason || ev.message); };
+  window.addEventListener('error', onErr); window.addEventListener('unhandledrejection', onErr);
+  try { openLiveInner(); } catch (e) { show(e); }
 }
 export const isLiveHost = () => !!hostSession;
 export function endLiveOnExit() { if (hostSession?.id && !hostSession.ended) beaconRpc('end_live', { p_id: hostSession.id }); }
