@@ -14,6 +14,7 @@ import { adminPage } from './pages/admin.js';
 import { postPage } from './pages/postpage.js';
 import { callsPage, initCalls, stopCalls, inCall } from './pages/calls.js';
 import { openLive, endLiveOnExit, initInvites } from './pages/live.js';
+import { checkForUpdates } from './update.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -144,3 +145,5 @@ CapApp?.addListener?.('backButton', () => {
 });
 window.addEventListener('unhandledrejection', (e) => { if (e.reason && e.reason.message) console.warn(e.reason); });
 boot();
+// Check for a newer NEXORA release after the first screen has had time to load.
+setTimeout(() => checkForUpdates(), 12000);;

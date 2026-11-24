@@ -1,11 +1,12 @@
 // Audio / video calls over WebRTC. Signaling = Supabase tables `calls` + `call_signals` (Realtime events with REST polling fallback).
 import { h, icon, avatar, clear, toast, timeAgo } from '../lib/dom.js';
+import { AudioRoute } from '../lib/audio-route.bundle.js';
 import { sb, state, bus, rtLive, PROFILE_MINI } from '../api.js';
 import { ICE_SERVERS, refreshIce } from '../config.js';
 import { headerBar } from './home.js';
 
 let cur = null;
-const seenSig = new Set(); const handled = new Set();
+const seenSig = new Set(); const handled = new Set(); const pendingIncoming = new Set();
 export const inCall = () => !!cur;
 const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
@@ -59,7 +60,7 @@ export async function placeCall(peer, kind) {
 }
 
 function newSession({ callId, peer, kind, role }) {
-  const s = { callId, peer, kind, role, pc: null, local: null, remote: new MediaStream(), muted: false, camOn: kind === 'video', facing: 'user', status: role === 'caller' ? 'calling' : 'ringing',
+  const s = { callId, peer, kind, role, pc: null, local: null, remote: new MediaStream(), remoteAudio: new MediaStream(), remoteVideo: new MediaStream(), muted: false, camOn: kind === 'video', facing: 'user', status: role === 'caller' ? 'calling' : 'ringing',
     connectedAt: 0, timers: [], stopRing: null, ended: false, peerCam: true, peerMuted: false, offer: null, pendingIce: [], remoteSet: false, speaker: kind === 'video', ctl: null, vSender: null, ui: {}, lostTimer: null };
   cur = s; return s;
 }
@@ -68,7 +69,7 @@ function setupPc(s) {
   s.cands = { host: 0, srflx: 0, relay: 0 };
   const pc = s.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
   pc.onicecandidate = (e) => { if (e.candidate) { const ty = e.candidate.type; if (ty in s.cands) s.cands[ty]++; } if (e.candidate) sendSignal(s, 'ice', e.candidate.toJSON()); };
-  pc.ontrack = (e) => { s.remote.addTrack(e.track); e.track.onunmute = () => paint(s); paint(s); attachRemote(s); };
+  pc.ontrack = (e) => { const target = e.track.kind === 'audio' ? s.remoteAudio : s.remoteVideo; if (!target.getTracks().some((t) => t.id === e.track.id)) target.addTrack(e.track); e.track.onunmute = () => { attachRemote(s); paint(s); }; e.track.onmute = () => paint(s); e.track.onended = () => { try { target.removeTrack(e.track); } catch {} attachRemote(s); paint(s); }; attachRemote(s); paint(s); };
   pc.oniceconnectionstatechange = () => { if (!s.ended && ['connected', 'completed'].includes(pc.iceConnectionState)) onConnected(s); };
   pc.onconnectionstatechange = () => {
     if (s.ended) return;
@@ -90,25 +91,55 @@ function setupPc(s) {
   ch.onopen = () => sendCtl(s);
 }
 const sendCtl = (s) => { try { if (s.ctl?.readyState === 'open') s.ctl.send(JSON.stringify({ cam: s.kind === 'video' ? s.camOn : false, muted: s.muted })); } catch {} };
-function attachRemote(s) { const v = s.ui.remote; if (v && v.srcObject !== s.remote) { v.srcObject = s.remote; v.play?.().catch(() => {}); } }
+function attachRemote(s) {
+  const v = s.ui.remote, a = s.ui.remoteAudio;
+  if (v && v.srcObject !== s.remoteVideo) {
+    v.srcObject = s.remoteVideo; v.muted = true; v.playsInline = true;
+    v.play?.().catch(() => {});
+  }
+  if (a) {
+    // Keep remote audio on its own media element: the video element is muted
+    // intentionally so video calls cannot silently swallow the other user's voice.
+    a.autoplay = true; a.playsInline = true; a.muted = false; a.volume = 1;
+    if (a.srcObject !== s.remoteAudio) a.srcObject = s.remoteAudio;
+    if (s.remoteAudio.getAudioTracks().some((t) => t.readyState === 'live')) {
+      const p = a.play?.();
+      if (p?.catch) p.catch(() => {
+        // Android WebView may defer autoplay until the next media lifecycle tick.
+        setTimeout(() => {
+          if (!s.ended && a.srcObject === s.remoteAudio && a.paused) a.play?.().catch(() => {});
+        }, 250);
+      });
+    }
+  }
+}
 
 function onConnected(s) {
   if (s.connectedAt) { s.weak = false; s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); paint(s); return; }
   s.stopRing?.(); s.stopRing = null; s.status = 'connected'; s.connectedAt = Date.now(); s.weak = false; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted));
-  s.timers.push(setInterval(() => { s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); const v = s.ui.remote; if (v && v.paused) v.play?.().catch(() => {}); paint(s); }, 1000)); sendCtl(s); paint(s); attachRemote(s);
+  // Force the intended Android route when WebRTC becomes active; WebView may default to speaker.
+  if (window.Capacitor?.isNativePlatform?.()) AudioRoute.setSpeaker({ enabled: !!s.speaker }).catch((e) => console.warn('[NEXORA audio route]', e));
+  s.timers.push(setInterval(() => { s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); const v = s.ui.remote; if (v && v.paused) v.play?.().catch(() => {}); const a = s.ui.remoteAudio; if (a && a.paused && s.remoteAudio.getAudioTracks().some((t) => t.readyState === 'live')) a.play?.().catch(() => {}); paint(s); }, 1000)); sendCtl(s); paint(s); attachRemote(s);
 }
 
 // ---- incoming ----
 async function onIncoming(call) {
-  if (!call || call.status !== 'ringing' || cur || handled.has(call.id) || call.callee_id !== state.me?.id) return;
+  if (!call || call.status !== 'ringing' || cur || handled.has(call.id) || pendingIncoming.has(call.id) || call.callee_id !== state.me?.id) return;
   if (Date.now() - new Date(call.created_at).getTime() > 46000) return;
-  handled.add(call.id);
-  let peer = null; try { peer = await sb.from('profiles').select(PROFILE_MINI).eq('id', call.caller_id).one(); } catch {}
-  if (cur) return; // another call opened meanwhile
-  const s = newSession({ callId: call.id, peer: peer || { id: call.caller_id, username: '?', display_name: 'مستخدم' }, kind: call.kind, role: 'callee' });
-  mountUI(s); s.stopRing = ringer('in');
-  s.timers.push(setTimeout(() => { if (cur === s && s.status === 'ringing') finish(s, 'فاتتك المكالمة'); }, 46000));
-  startTick(s);
+  // Profile lookup is asynchronous; reserve this call while it is in flight so
+  // realtime + polling cannot open duplicate incoming-call screens.
+  pendingIncoming.add(call.id);
+  try {
+    let peer = null; try { peer = await sb.from('profiles').select(PROFILE_MINI).eq('id', call.caller_id).one(); } catch {}
+    if (cur || handled.has(call.id)) return; // another call/session won the race
+    handled.add(call.id);
+    const s = newSession({ callId: call.id, peer: peer || { id: call.caller_id, username: '?', display_name: 'مستخدم' }, kind: call.kind, role: 'callee' });
+    mountUI(s); s.stopRing = ringer('in');
+    s.timers.push(setTimeout(() => { if (cur === s && s.status === 'ringing') finish(s, 'فاتتك المكالمة'); }, 46000));
+    startTick(s);
+  } finally {
+    pendingIncoming.delete(call.id);
+  }
 }
 async function acceptCall(s) {
   if (s.status !== 'ringing') return;
@@ -137,8 +168,12 @@ async function flushIce(s) { const q = s.pendingIce.splice(0); for (const c of q
 
 // ---- signaling intake (realtime push + polling fallback, deduped by id) ----
 async function onSignal(sig) {
-  if (!sig || seenSig.has(sig.id)) return; seenSig.add(sig.id);
-  const s = cur; if (!s || sig.call_id !== s.callId || s.ended) return;
+  if (!sig) return;
+  const s = cur;
+  // Do not mark a signal as seen until its call session exists; the offer can arrive
+  // before the incoming-call event and must remain available to the polling fallback.
+  if (!s || sig.call_id !== s.callId || s.ended || seenSig.has(sig.id)) return;
+  seenSig.add(sig.id);
   try {
     if (sig.kind === 'offer') { s.offer = sig.payload; if (s.local) await applyOffer(s); }
     else if (sig.kind === 'answer') { if (s.pc && !s.remoteSet) { await s.pc.setRemoteDescription(sig.payload); s.remoteSet = true; await flushIce(s); } }
@@ -178,10 +213,23 @@ async function hangup(s, why) {
   try { if (wasRinging && s.role === 'callee') await sb.rpc('reject_call', { p_id: s.callId }); else await sb.rpc('end_call', { p_id: s.callId }); } catch {}
   finish(s, why || 'انتهت المكالمة');
 }
+async function writeCallMessage(s, text) {
+  if (s.role !== 'caller' || !state.me?.id || !s.peer?.id) return;
+  const outcome = s.connectedAt ? 'completed' : /رفض/.test(text || '') ? 'rejected' : /فاتتك|لا يوجد رد/.test(text || '') ? 'missed' : 'cancelled';
+  const duration = s.connectedAt ? Math.max(0, Math.round((Date.now() - s.connectedAt) / 1000)) : 0;
+  const body = `NEXORA_CALL|${s.callId}|${s.kind}|${outcome}|${duration}`;
+  try {
+    const exists = await sb.from('messages').select('id').eq('sender_id', state.me.id).eq('receiver_id', s.peer.id).eq('body', body).one();
+    if (exists) return;
+    const row = await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: s.peer.id, body }).select('*').one();
+    if (row) bus.dispatchEvent(new CustomEvent('rt:message', { detail: row }));
+  } catch (e) { console.warn('[NEXORA call message]', e); }
+}
 function finish(s, text) {
   if (s.ended) return; s.ended = true; s.status = 'ended'; s.statusText = text;
+  if (s.role === 'caller') writeCallMessage(s, text);
   s.timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); clearTimeout(s.lostTimer); s.stopRing?.();
-  try { s.pc?.close(); } catch {} try { s.local?.getTracks().forEach((t) => t.stop()); } catch {}
+  try { s.pc?.close(); } catch {} try { s.ui.remote?.pause?.(); s.ui.remoteAudio?.pause?.(); s.ui.remote.srcObject = null; s.ui.remoteAudio.srcObject = null; } catch {} try { s.local?.getTracks().forEach((t) => t.stop()); } catch {}
   paint(s); setTimeout(() => { s.ui.el?.remove(); if (cur === s) cur = null; bus.dispatchEvent(new CustomEvent('m17:call-ended')); }, 900);
   if (cur === s) cur = null; // free immediately so a new call can start; UI fades out
 }
@@ -189,26 +237,38 @@ function finish(s, text) {
 // ---- UI ----
 const ctlBtn = (cls, label, ic, fn, on) => h('button', { class: 'cs-btn ' + cls + (on ? ' on' : ''), type: 'button', 'aria-label': label, onclick: fn }, icon(ic, 26), h('span', null, label));
 function mountUI(s) {
-  const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true });
+  const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true }); remote.muted = true;
+  const remoteAudio = h('audio', { class: 'cs-audio', autoplay: true }); remoteAudio.autoplay = true; remoteAudio.playsInline = true; remoteAudio.muted = false; remoteAudio.volume = 1;
   const local = h('video', { class: 'cs-local', playsinline: true, autoplay: true }); local.muted = true; local.volume = 0;
   const name = h('h2', null, s.peer.display_name || s.peer.username), status = h('div', { class: 'cs-status' }), flags = h('div', { class: 'cs-flags' });
   const info = h('div', { class: 'cs-info' }, h('div', { class: 'cs-av' }, avatar(s.peer, 120)), name, status, flags);
   const controls = h('div', { class: 'cs-controls' });
-  const el = h('div', { class: 'call-screen ' + s.kind, role: 'dialog' }, remote, local, info, controls);
-  s.ui = { el, remote, local, status, flags, controls, info };
+  const el = h('div', { class: 'call-screen ' + s.kind, role: 'dialog' }, remote, remoteAudio, local, info, controls);
+  s.ui = { el, remote, remoteAudio, local, status, flags, controls, info };
   document.body.append(el);
   el.addEventListener('m17:back', () => { /* back button never silently drops a call */ toast('اضغط زر إنهاء المكالمة لإنهائها'); });
   paint(s);
 }
 async function toggleSpeaker(s) {
-  const v = s.ui.remote;
-  if (!v?.setSinkId || !navigator.mediaDevices.enumerateDevices) return toast('تبديل مخرج الصوت غير مدعوم على هذا الجهاز', 'err');
+  // Android WebView has no reliable setSinkId support; route through AudioManager.
+  if (!window.Capacitor?.isNativePlatform?.()) {
+    toast('تبديل مخرج الصوت متاح داخل تطبيق NEXORA على أندرويد فقط', 'err');
+    return;
+  }
+  const previous = !!s.speaker;
+  const want = !previous;
+  // Update the control immediately so it never appears stuck while Android switches routes.
+  s.speaker = want;
+  paint(s);
   try {
-    const outs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
-    const want = !s.speaker; const pick = want ? outs.find((d) => /speaker/i.test(d.label)) : outs.find((d) => /earpiece|receiver|handset|phone/i.test(d.label));
-    if (!pick && outs.length < 2) return toast('لا يوجد مخرج صوت آخر متاح على هذا الجهاز', 'err');
-    await v.setSinkId((pick || outs.find((d) => d.deviceId !== 'default') || outs[0]).deviceId); s.speaker = want; paint(s);
-  } catch { toast('تعذّر تبديل مخرج الصوت', 'err'); }
+    await AudioRoute.setSpeaker({ enabled: want });
+  } catch (error) {
+    console.warn('[NEXORA call audio route]', error);
+    s.speaker = previous;
+    paint(s);
+    const detail = error?.message ? String(error.message).slice(0, 100) : 'سبب غير معروف';
+    toast('فشل مخرج الصوت: ' + detail, 'err');
+  }
 }
 function toggleMute(s) { s.muted = !s.muted; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted)); sendCtl(s); paint(s); }
 async function toggleCam(s) {
@@ -235,7 +295,7 @@ function paint(s) {
   u.status.textContent = txt;
   if (s.diag && !connected && s.status === 'connecting') u.status.append(h('div', { class: 'small muted', dir: 'ltr' }, s.diag));
   u.flags.replaceChildren(...[s.peerMuted && connected ? h('span', null, icon('micoff', 16), ' الطرف الآخر كتم الصوت') : null, s.kind === 'video' && connected && !s.peerCam ? h('span', null, icon('videooff', 16), ' أغلق الكاميرا') : null].filter(Boolean));
-  const remoteVideoLive = s.kind === 'video' && connected && s.peerCam && s.remote.getVideoTracks().length > 0;
+  const remoteVideoLive = s.kind === 'video' && connected && s.peerCam && s.remoteVideo.getVideoTracks().some((t) => t.readyState === 'live' && !t.muted);
   u.el.classList.toggle('has-video', remoteVideoLive); u.el.classList.toggle('connected', connected);
   if (s.local && s.kind === 'video' && s.camOn) { if (!u.local.srcObject) { u.local.srcObject = new MediaStream(s.local.getVideoTracks()); u.local.muted = true; u.local.play?.().catch(() => {}); } u.local.hidden = false; u.local.classList.toggle('mirror', s.facing === 'user'); } else u.local.hidden = true;
   const c = []; const ended = s.ended;
@@ -262,7 +322,10 @@ export function initCalls() {
   bus.addEventListener('rt:call-update', (e) => onCallUpdate(e.detail));
   bus.addEventListener('rt:signal', (e) => onSignal(e.detail));
   ['rt:ready', 'm17:resume'].forEach((n) => bus.addEventListener(n, checkIncoming));
-  ivCheck = setInterval(() => { if (!document.hidden && !rtLive()) checkIncoming(); }, 3000);
+  // Always poll incoming calls as a safety net. A Realtime websocket can be connected
+  // while Postgres changes for `calls` are not delivered (publication/RLS/channel issues).
+  // Without this fallback the caller stays on “calling” forever on the callee device.
+  ivCheck = setInterval(() => { if (!document.hidden) checkIncoming(); }, 3000);
   checkIncoming();
 }
 export function stopCalls() { if (cur) hangup(cur); }

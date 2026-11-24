@@ -1,6 +1,8 @@
-name: Build M17 APK
+name: Build NEXORA APK
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 jobs:
@@ -13,6 +15,15 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
+      - name: Bundle Capacitor audio route bridge
+        run: npx esbuild www/js/lib/audio-route.js --bundle --format=esm --platform=browser --outfile=www/js/lib/audio-route.bundle.js
+      - name: Bundle complete application for Android WebView
+        run: npx esbuild www/js/app.js --bundle --format=esm --platform=browser --outfile=www/js/app.bundle.js
+      - name: Check JavaScript syntax
+        run: |
+          for f in $(find www/js -type f -name '*.js'); do
+            node --input-type=module --check < "$f"
+          done
       - name: Add Android platform
         run: npx cap add android
       - name: Firebase config + manifest permissions
@@ -35,6 +46,82 @@ jobs:
           for d in branding/res/mipmap-*; do mkdir -p $R/$(basename $d); cp $d/*.png $R/$(basename $d)/; done
           sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">NEXORA</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">NEXORA</string>|' $R/values/strings.xml
           grep -n "app_name" $R/values/strings.xml
+      - name: Add native Android call audio routing
+        run: |
+          mkdir -p android/app/src/main/java/com/m17/social
+          cat > android/app/src/main/java/com/m17/social/AudioRoutePlugin.java <<'EOF'
+          package com.m17.social;
+
+          import android.content.Context;
+          import android.media.AudioDeviceInfo;
+          import android.media.AudioManager;
+          import android.os.Build;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          @CapacitorPlugin(name = "AudioRoute")
+          public class AudioRoutePlugin extends Plugin {
+            @PluginMethod
+            public void setSpeaker(PluginCall call) {
+              Boolean enabledArg = call.getBoolean("enabled");
+              final boolean enabled = enabledArg != null && enabledArg;
+              try {
+                AudioManager audio = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                if (audio == null) throw new IllegalStateException("AudioManager unavailable");
+                audio.setMode(AudioManager.MODE_IN_COMMUNICATION);
+
+                boolean routed = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                  AudioDeviceInfo target = null;
+                  for (AudioDeviceInfo device : audio.getAvailableCommunicationDevices()) {
+                    if (enabled && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+                      target = device;
+                      break;
+                    }
+                    if (!enabled && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+                      target = device;
+                      break;
+                    }
+                  }
+                  if (target != null) routed = audio.setCommunicationDevice(target);
+                  if (!routed) {
+                    // Clear any stale explicit route before using Android's legacy switch.
+                    audio.clearCommunicationDevice();
+                    audio.setSpeakerphoneOn(enabled);
+                    routed = true;
+                  }
+                } else {
+                  audio.setSpeakerphoneOn(enabled);
+                  routed = true;
+                }
+
+                JSObject result = new JSObject();
+                result.put("speaker", enabled);
+                result.put("routed", routed);
+                call.resolve(result);
+              } catch (Exception error) {
+                call.reject("Unable to change Android audio route", error);
+              }
+            }
+          }
+          EOF
+          cat > android/app/src/main/java/com/m17/social/MainActivity.java <<'EOF'
+          package com.m17.social;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              registerPlugin(AudioRoutePlugin.class);
+              super.onCreate(savedInstanceState);
+            }
+          }
+          EOF
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android
@@ -43,3 +130,4 @@ jobs:
         with:
           name: M17-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+# Rebuild after final call-event parser correction.
