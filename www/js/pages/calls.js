@@ -190,7 +190,7 @@ function finish(s, text) {
 const ctlBtn = (cls, label, ic, fn, on) => h('button', { class: 'cs-btn ' + cls + (on ? ' on' : ''), type: 'button', 'aria-label': label, onclick: fn }, icon(ic, 26), h('span', null, label));
 function mountUI(s) {
   const remote = h('video', { class: 'cs-remote', playsinline: true, autoplay: true }); remote.muted = true;
-  const remoteAudio = h('audio', { class: 'cs-audio', autoplay: true }); remoteAudio.muted = false; remoteAudio.volume = 1;
+  const remoteAudio = h('audio', { class: 'cs-audio', autoplay: true }); remoteAudio.hidden = true; remoteAudio.muted = false; remoteAudio.volume = 1;
   const local = h('video', { class: 'cs-local', playsinline: true, autoplay: true }); local.muted = true; local.volume = 0;
   const name = h('h2', null, s.peer.display_name || s.peer.username), status = h('div', { class: 'cs-status' }), flags = h('div', { class: 'cs-flags' });
   const info = h('div', { class: 'cs-info' }, h('div', { class: 'cs-av' }, avatar(s.peer, 120)), name, status, flags);
