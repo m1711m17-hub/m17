@@ -64,38 +64,41 @@ jobs:
           public class AudioRoutePlugin extends Plugin {
             @PluginMethod
             public void setSpeaker(PluginCall call) {
-              Boolean enabled = call.getBoolean("enabled");
-              if (enabled == null) enabled = false;
+              Boolean enabledArg = call.getBoolean("enabled");
+              final boolean enabled = enabledArg != null && enabledArg;
               try {
                 AudioManager audio = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                if (audio == null) throw new IllegalStateException("AudioManager unavailable");
                 audio.setMode(AudioManager.MODE_IN_COMMUNICATION);
+
+                boolean routed = false;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                   AudioDeviceInfo target = null;
                   for (AudioDeviceInfo device : audio.getAvailableCommunicationDevices()) {
-                    if (enabled && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) target = device;
-                    if (!enabled && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) target = device;
-                  }
-                  try {
-                    if (target != null) {
-                      if (!audio.setCommunicationDevice(target)) {
-                        audio.setSpeakerphoneOn(enabled);
-                      }
-                    } else {
-                      // Some Android vendors omit the earpiece from the communication-device list.
-                      // Clearing the explicit route restores the system default; use legacy routing
-                      // as a fallback so a missing device entry does not fail the UI action.
-                      if (!enabled) audio.clearCommunicationDevice();
-                      audio.setSpeakerphoneOn(enabled);
+                    if (enabled && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+                      target = device;
+                      break;
                     }
-                  } catch (Exception routeError) {
-                    // Vendor WebView/audio HAL implementations differ; retain a legacy fallback.
+                    if (!enabled && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
+                      target = device;
+                      break;
+                    }
+                  }
+                  if (target != null) routed = audio.setCommunicationDevice(target);
+                  if (!routed) {
+                    // Clear any stale explicit route before using Android's legacy switch.
+                    audio.clearCommunicationDevice();
                     audio.setSpeakerphoneOn(enabled);
+                    routed = true;
                   }
                 } else {
                   audio.setSpeakerphoneOn(enabled);
+                  routed = true;
                 }
+
                 JSObject result = new JSObject();
                 result.put("speaker", enabled);
+                result.put("routed", routed);
                 call.resolve(result);
               } catch (Exception error) {
                 call.reject("Unable to change Android audio route", error);
