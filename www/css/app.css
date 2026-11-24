@@ -529,3 +529,4 @@ body.in-chat .tabbar{display:none}
 .lx-plist{display:flex;flex-direction:column;max-height:50vh;overflow-y:auto}.lx-prow{display:flex;align-items:center;gap:12px;padding:8px 2px;border-bottom:1px solid var(--line)}
 .lx-pn{flex:1;min-width:0;display:flex;flex-direction:column}.lx-pn span{font-size:.78rem;opacity:.65}.lx-pb{height:38px;padding:0 18px}
 .lv-errbox{position:absolute;z-index:50;inset:auto 14px 40px 14px;background:#2a0f18;border:1px solid #ff5470;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;color:#fff;font-size:.85rem;word-break:break-word}
+.boot-retry{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}

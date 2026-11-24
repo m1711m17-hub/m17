@@ -82,7 +82,11 @@ function restoreRoute() {
 async function boot() {
   stopRealtime(); clearInterval(badgeTimer); cleanup?.(); cleanup = null; nav++;
   let err = '';
-  try { if (sb.session) await loadMe(); } catch (e) { err = e.message; state.me = null; }
+  let slow = false;
+  try { if (sb.session) await Promise.race([loadMe(), new Promise((_, rej) => setTimeout(() => { slow = true; rej(new Error('تعذّر الاتصال بالخادم. تحقق من الإنترنت.')); }, 12000))]); } catch (e) { err = e.message; state.me = null; }
+  if (slow && sb.session) { // signed in but the network is down/slow: keep the session, offer a retry instead of throwing the user to the login page
+    document.getElementById('splash')?.remove(); clear(root).append(h('div', { class: 'boot-retry' }, h('p', null, err), h('button', { class: 'btn primary', type: 'button', onclick: () => boot() }, 'إعادة المحاولة'))); return;
+  }
   document.getElementById('splash')?.remove();
   document.body.classList.remove('in-chat');
   if (!state.me) {
@@ -97,7 +101,7 @@ async function boot() {
   await route();
   refreshBadges();
   initPush();
-  startRealtime(); initCalls(); initInvites(); touchPresence();
+  startRealtime(); initCalls(); try { initInvites(); } catch (e) { console.warn(e); } touchPresence();
   badgeTimer = setInterval(() => { if (!document.hidden) refreshBadges(); }, POLL_BADGE_MS);
 }
 
