@@ -117,6 +117,8 @@ function attachRemote(s) {
 function onConnected(s) {
   if (s.connectedAt) { s.weak = false; s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); paint(s); return; }
   s.stopRing?.(); s.stopRing = null; s.status = 'connected'; s.connectedAt = Date.now(); s.weak = false; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted));
+  // Force the intended Android route when WebRTC becomes active; WebView may default to speaker.
+  if (window.Capacitor?.isNativePlatform?.()) AudioRoute.setSpeaker({ enabled: !!s.speaker }).catch((e) => console.warn('[NEXORA audio route]', e));
   s.timers.push(setInterval(() => { s.local?.getAudioTracks().forEach((t) => { if (t.enabled === s.muted) t.enabled = !s.muted; }); const v = s.ui.remote; if (v && v.paused) v.play?.().catch(() => {}); const a = s.ui.remoteAudio; if (a && a.paused && s.remoteAudio.getAudioTracks().some((t) => t.readyState === 'live')) a.play?.().catch(() => {}); paint(s); }, 1000)); sendCtl(s); paint(s); attachRemote(s);
 }
 
@@ -235,20 +237,23 @@ function mountUI(s) {
   paint(s);
 }
 async function toggleSpeaker(s) {
-  const want = !s.speaker;
+  // Android WebView has no reliable setSinkId support; route through AudioManager.
+  if (!window.Capacitor?.isNativePlatform?.()) {
+    toast('تبديل مخرج الصوت متاح داخل تطبيق NEXORA على أندرويد فقط', 'err');
+    return;
+  }
+  const previous = !!s.speaker;
+  const want = !previous;
+  // Update the control immediately so it never appears stuck while Android switches routes.
+  s.speaker = want;
+  paint(s);
   try {
-    // Native Android AudioManager is required: Android WebView does not reliably
-    // implement HTMLMediaElement.setSinkId for call audio routing.
-    if (window.Capacitor?.isNativePlatform?.()) {
-      await AudioRoute.setSpeaker({ enabled: want });
-      s.speaker = want;
-      paint(s);
-      return;
-    }
-    toast('تبديل مخرج الصوت متاح داخل تطبيق M17 على أندرويد فقط', 'err');
+    await AudioRoute.setSpeaker({ enabled: want });
   } catch (error) {
-    console.warn('[M17 call audio route]', error);
-    toast('تعذّر تبديل مخرج الصوت من إعدادات أندرويد', 'err');
+    console.warn('[NEXORA call audio route]', error);
+    s.speaker = previous;
+    paint(s);
+    toast('تعذّر تبديل مخرج الصوت؛ أعد المحاولة', 'err');
   }
 }
 function toggleMute(s) { s.muted = !s.muted; s.local?.getAudioTracks().forEach((t) => (t.enabled = !s.muted)); sendCtl(s); paint(s); }
