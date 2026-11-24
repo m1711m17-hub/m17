@@ -298,6 +298,12 @@ function openLiveInner() {
       ].filter(Boolean),
     });
     el.append(ov.el); el.classList.add('live-on');
+    { const mb = h('button', { class: 'lx-sbtn', type: 'button', 'aria-label': 'كتم الميكروفون' });
+      const paintM = () => { mb.replaceChildren(icon(s.muted ? 'micoff' : 'mic', 22)); mb.classList.toggle('off', s.muted); };
+      mb.onclick = () => { s.muted = !s.muted; s.stream?.getAudioTracks().forEach((t) => (t.enabled = !s.muted)); paintM(); toast(s.muted ? 'تم كتم الميكروفون' : 'تم تشغيل الميكروفون'); }; paintM();
+      const tools = h('div', { class: 'lx-sidetools' }, mb);
+      if (s.mode === 'camera') tools.append(h('button', { class: 'lx-sbtn', type: 'button', 'aria-label': 'قلب الكاميرا', onclick: () => flip() }, icon('flip', 22)));
+      el.append(tools); }
     el.append(h('button', { class: 'lx-invite', type: 'button', onclick: () => openInvite() }, svg('<path d="M12 5v14M5 12h14" stroke-width="2.6"/>', 16), ' إرسال دعوة'));
     for (const p of s.queue.splice(0)) sendInviteTo(p, s.id, s.title);
     if (s.title) ov.el.append(h('div', { class: 'lv-title-show' }, s.title));
@@ -425,6 +431,10 @@ export async function openWatch(live, host, opts = {}) {
   const tap = h('button', { class: 'btn primary lv-tap', type: 'button', hidden: true, onclick: () => { video.play(); tap.hidden = true; } }, 'اضغط للتشغيل');
   const el = h('div', { class: 'live-screen watch lx-screen', role: 'dialog' }, video, status, tap, ov.el);
   if (live.title) ov.el.append(h('div', { class: 'lv-title-show' }, live.title));
+  { const sb2 = h('button', { class: 'lx-sbtn', type: 'button', 'aria-label': 'كتم صوت البث' });
+    const paintS = () => { sb2.replaceChildren(icon(video.muted ? 'micoff' : 'speaker', 22)); sb2.classList.toggle('off', video.muted); };
+    sb2.onclick = () => { video.muted = !video.muted; paintS(); toast(video.muted ? 'تم كتم صوت البث' : 'تم تشغيل صوت البث'); video.play?.().catch(() => {}); }; paintS();
+    el.append(h('div', { class: 'lx-sidetools' }, sb2)); }
   document.body.append(el); el.classList.add('live-on'); el.addEventListener('m17:back', () => leave());
 
   let r; try { r = await sb.rpc('join_live', { p_id: live.id }); } catch (e) { r = { ok: false, error: 'x', msg: e.message }; }
