@@ -213,8 +213,21 @@ async function hangup(s, why) {
   try { if (wasRinging && s.role === 'callee') await sb.rpc('reject_call', { p_id: s.callId }); else await sb.rpc('end_call', { p_id: s.callId }); } catch {}
   finish(s, why || 'انتهت المكالمة');
 }
+async function writeCallMessage(s, text) {
+  if (s.role !== 'caller' || !state.me?.id || !s.peer?.id) return;
+  const outcome = s.connectedAt ? 'completed' : /رفض/.test(text || '') ? 'rejected' : /فاتتك|لا يوجد رد/.test(text || '') ? 'missed' : 'cancelled';
+  const duration = s.connectedAt ? Math.max(0, Math.round((Date.now() - s.connectedAt) / 1000)) : 0;
+  const body = `NEXORA_CALL|${s.callId}|${s.kind}|${outcome}|${duration}`;
+  try {
+    const exists = await sb.from('messages').select('id').eq('sender_id', state.me.id).eq('receiver_id', s.peer.id).eq('body', body).one();
+    if (exists) return;
+    const row = await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: s.peer.id, body }).select('*').one();
+    if (row) bus.dispatchEvent(new CustomEvent('rt:message', { detail: row }));
+  } catch (e) { console.warn('[NEXORA call message]', e); }
+}
 function finish(s, text) {
   if (s.ended) return; s.ended = true; s.status = 'ended'; s.statusText = text;
+  if (s.role === 'caller') writeCallMessage(s, text);
   s.timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); clearTimeout(s.lostTimer); s.stopRing?.();
   try { s.pc?.close(); } catch {} try { s.ui.remote?.pause?.(); s.ui.remoteAudio?.pause?.(); s.ui.remote.srcObject = null; s.ui.remoteAudio.srcObject = null; } catch {} try { s.local?.getTracks().forEach((t) => t.stop()); } catch {}
   paint(s); setTimeout(() => { s.ui.el?.remove(); if (cur === s) cur = null; bus.dispatchEvent(new CustomEvent('m17:call-ended')); }, 900);
