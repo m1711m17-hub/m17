@@ -4,7 +4,7 @@
 // Limit: 6 simultaneous viewers per broadcast (no media server). Viewers = people who follow the host.
 import { h, icon, avatar, toast, confirmBox, clear, sheet } from '../lib/dom.js';
 import { sb, state, bus, rt, rtLive, beaconRpc, PROFILE_MINI } from '../api.js';
-import { ICE_SERVERS } from '../config.js';
+import { ICE_SERVERS, refreshIce } from '../config.js';
 
 export const MAX_VIEWERS = 6;
 let hostSession = null, watchSession = null;
@@ -278,6 +278,7 @@ function openLiveInner() {
   async function start() {
     try { const AC0 = window.AudioContext || window.webkitAudioContext; s.preActx = new AC0(); s.preActx.resume?.(); } catch {} // created inside the tap so Android lets it run
     startBtn.disabled = true;
+    await refreshIce(2500);
     try { await buildStream(); } catch (e) { startBtn.disabled = false; return toast(e.message || 'تعذّر تجهيز البث', 'err'); }
     try {
       const r = await sb.rpc('start_live', { p_title: title.value.trim() });
@@ -447,6 +448,7 @@ export async function openWatch(live, host, opts = {}) {
 
   let r; try { r = await sb.rpc('join_live', { p_id: live.id }); } catch (e) { r = { ok: false, error: 'x', msg: e.message }; }
   if (!r?.ok) { status.textContent = r.error === 'full' ? `البث ممتلئ حالياً (الحد الأقصى ${MAX_VIEWERS} مشاهدين). حاول لاحقاً.` : r.error === 'ended' ? 'انتهى هذا البث.' : r.error === 'forbidden' ? 'هذا البث لمتابعي المضيف فقط.' : (r.msg || 'تعذّر الانضمام للبث'); w.timers.push(setTimeout(() => leave(true), 2200)); return; }
+  await refreshIce(2500);
   const pc = w.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
   pc.addTransceiver('video', { direction: 'recvonly' }); pc.addTransceiver('audio', { direction: 'recvonly' });
   w.sendAccept = () => { if (w.dc?.readyState === 'open') { try { w.dc.send(JSON.stringify({ t: 'acc', ...me() })); } catch {} } else toast('لم يكتمل الاتصال بعد، حاول بعد لحظات', 'err'); };

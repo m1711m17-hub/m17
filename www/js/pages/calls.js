@@ -1,7 +1,7 @@
 // Audio / video calls over WebRTC. Signaling = Supabase tables `calls` + `call_signals` (Realtime events with REST polling fallback).
 import { h, icon, avatar, clear, toast, timeAgo } from '../lib/dom.js';
 import { sb, state, bus, rtLive, PROFILE_MINI } from '../api.js';
-import { ICE_SERVERS } from '../config.js';
+import { ICE_SERVERS, refreshIce } from '../config.js';
 import { headerBar } from './home.js';
 
 let cur = null;
@@ -48,7 +48,7 @@ export async function placeCall(peer, kind) {
   mountUI(s); s.stopRing = ringer('out');
   s.timers.push(setTimeout(() => { if (cur === s && s.status === 'calling') hangup(s, 'لا يوجد رد'); }, 45000));
   try {
-    setupPc(s);
+    await refreshIce(2500); setupPc(s);
     const a = s.local.getAudioTracks()[0]; s.pc.addTransceiver(a, { direction: 'sendrecv' });
     const vt = s.local.getVideoTracks()[0];
     if (kind === 'video') s.vSender = s.pc.addTransceiver(vt || 'video', { direction: 'sendrecv' }).sender;
@@ -65,8 +65,9 @@ function newSession({ callId, peer, kind, role }) {
 }
 
 function setupPc(s) {
+  s.cands = { host: 0, srflx: 0, relay: 0 };
   const pc = s.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
-  pc.onicecandidate = (e) => { if (e.candidate) sendSignal(s, 'ice', e.candidate.toJSON()); };
+  pc.onicecandidate = (e) => { if (e.candidate) { const ty = e.candidate.type; if (ty in s.cands) s.cands[ty]++; } if (e.candidate) sendSignal(s, 'ice', e.candidate.toJSON()); };
   pc.ontrack = (e) => { s.remote.addTrack(e.track); e.track.onunmute = () => paint(s); paint(s); attachRemote(s); };
   pc.oniceconnectionstatechange = () => { if (!s.ended && ['connected', 'completed'].includes(pc.iceConnectionState)) onConnected(s); };
   pc.onconnectionstatechange = () => {
@@ -76,6 +77,14 @@ function setupPc(s) {
     else if (st === 'disconnected') { s.weak = true; paint(s); clearTimeout(s.lostTimer); s.lostTimer = setTimeout(() => { if (cur === s && pc.connectionState !== 'connected') hangup(s, 'انقطع الاتصال'); }, 10000); }
     else if (st === 'failed') hangup(s, 'تعذّر الاتصال (الشبكة لا تسمح بالمكالمات المباشرة)');
   };
+  const t0 = Date.now(); let restarted = false;
+  s.timers.push(setInterval(() => {
+    if (s.ended || s.connectedAt) return;
+    const sec = (Date.now() - t0) / 1000, c = s.cands;
+    s.diag = `ICE: ${pc.iceConnectionState} · host ${c.host} / srflx ${c.srflx} / relay ${c.relay}`; paint(s);
+    if (sec > 12 && !restarted && ['checking', 'disconnected', 'failed', 'new'].includes(pc.iceConnectionState)) { restarted = true; try { pc.restartIce?.(); } catch {} }
+    if (sec > 30) hangup(s, c.relay ? 'تعذّر إكمال الاتصال بين الهاتفين' : 'تعذّر الاتصال: لا يوجد خادم تمرير (TURN) يعمل على شبكتك');
+  }, 1000));
   const ch = pc.createDataChannel('ctl', { negotiated: true, id: 0 }); s.ctl = ch;
   ch.onmessage = (e) => { try { const m = JSON.parse(e.data); if ('cam' in m) s.peerCam = !!m.cam; if ('muted' in m) s.peerMuted = !!m.muted; paint(s); } catch {} };
   ch.onopen = () => sendCtl(s);
@@ -111,7 +120,7 @@ async function acceptCall(s) {
   if (!ok) { media.stream.getTracks().forEach((t) => t.stop()); finish(s, 'انتهت المكالمة'); return; }
   s.local = media.stream; s.camOn = s.kind === 'video' && !media.camDenied; if (media.camDenied) toast('الكاميرا غير متاحة — بالصوت فقط', 'err');
   paint(s);
-  try { await applyOffer(s); } catch (e) { hangup(s, 'تعذّر إنشاء المكالمة'); }
+  try { await refreshIce(2500); await applyOffer(s); } catch (e) { hangup(s, 'تعذّر إنشاء المكالمة'); }
 }
 async function applyOffer(s) {
   if (!s.offer || !s.local || s.pc) return;
@@ -224,6 +233,7 @@ function paint(s) {
   const connected = s.status === 'connected';
   const txt = s.statusText || (s.status === 'calling' ? 'جارٍ الاتصال...' : s.status === 'ringing' ? (s.kind === 'video' ? 'مكالمة فيديو واردة' : 'مكالمة صوتية واردة') : s.status === 'connecting' ? 'جارٍ التوصيل...' : connected ? (s.weak ? 'الاتصال ضعيف...' : fmt(Math.floor((Date.now() - s.connectedAt) / 1000))) : '');
   u.status.textContent = txt;
+  if (s.diag && !connected && s.status === 'connecting') u.status.append(h('div', { class: 'small muted', dir: 'ltr' }, s.diag));
   u.flags.replaceChildren(...[s.peerMuted && connected ? h('span', null, icon('micoff', 16), ' الطرف الآخر كتم الصوت') : null, s.kind === 'video' && connected && !s.peerCam ? h('span', null, icon('videooff', 16), ' أغلق الكاميرا') : null].filter(Boolean));
   const remoteVideoLive = s.kind === 'video' && connected && s.peerCam && s.remote.getVideoTracks().length > 0;
   u.el.classList.toggle('has-video', remoteVideoLive); u.el.classList.toggle('connected', connected);
