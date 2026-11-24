@@ -2,6 +2,8 @@ name: Build M17 APK
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 jobs:
   apk:
@@ -13,6 +15,11 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
+      - name: Check JavaScript syntax
+        run: |
+          for f in $(find www/js -type f -name '*.js'); do
+            node --input-type=module --check < "$f"
+          done
       - name: Add Android platform
         run: npx cap add android
       - name: Firebase config + manifest permissions
