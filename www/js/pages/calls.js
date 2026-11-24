@@ -1,7 +1,6 @@
 // Audio / video calls over WebRTC. Signaling = Supabase tables `calls` + `call_signals` (Realtime events with REST polling fallback).
 import { h, icon, avatar, clear, toast, timeAgo } from '../lib/dom.js';
-import { registerPlugin } from '@capacitor/core';
-const AudioRoute = registerPlugin('AudioRoute');
+import { AudioRoute } from '../lib/audio-route.bundle.js';
 import { sb, state, bus, rtLive, PROFILE_MINI } from '../api.js';
 import { ICE_SERVERS, refreshIce } from '../config.js';
 import { headerBar } from './home.js';
