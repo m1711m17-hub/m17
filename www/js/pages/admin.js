@@ -16,6 +16,7 @@ export async function adminPage(root) {
     ['broadcast', 'إشعار عام', 'megaphone', hasPerm('notifications.broadcast'), broadcastTab],
     ['features', 'المميزات', 'toggle', hasPerm('features.manage'), featuresTab],
     ['roles', 'الصلاحيات', 'shield', isOwner(), rolesTab],
+    ['verification', 'التوثيق', 'badge-check', isOwner(), verificationTab],
     ['audit', 'السجل', 'list', hasPerm('audit.view'), auditTab],
   ].filter((t) => t[3]);
   let cur = tabs[0][0];
@@ -141,4 +142,25 @@ async function auditTab(box) {
   if (!rows.length) return box.append(h('div', { class: 'empty' }, 'السجل فارغ'));
   box.append(h('div', { class: 'card-list' }, rows.map((r) => h('div', { class: 'audit' }, h('div', { class: 'row between' }, h('b', null, ACTION_LABELS[r.action] || r.action), h('span', { class: 'muted small' }, timeAgo(r.created_at))),
     h('div', { class: 'muted small' }, 'بواسطة @' + (r.actor_username || '—') + (r.target ? ' · الهدف: ' + String(r.target).slice(0, 18) : '')), Object.keys(r.details || {}).length ? h('div', { class: 'muted small', dir: 'ltr' }, JSON.stringify(r.details)) : null))));
+}
+
+
+// Verification management is intentionally owner-only in both UI and database RPCs.
+async function verificationTab(box) {
+  const list = h('div', { class: 'card-list' });
+  box.append(h('p', { class: 'muted small' }, 'هذه الصفحة للمالك فقط. الموافقة تمنح الشارة الحمراء، والرفض لا يمنحها.'), list);
+  async function load() {
+    const rows = await sb.rpc('owner_list_verification_requests');
+    clear(list);
+    if (!rows?.length) list.append(h('div', { class: 'empty small' }, 'لا توجد طلبات توثيق'));
+    rows.forEach((r) => {
+      const actions = r.status === 'pending' ? h('div', { class: 'row gap wrap' },
+        h('button', { class: 'btn primary sm', onclick: async (e) => { e.currentTarget.disabled = true; try { await sb.rpc('owner_review_verification', { p_request_id: r.request_id, p_approve: true, p_note: '' }); toast('تم توثيق الحساب', 'ok'); await load(); } catch (er) { toast(er.message, 'err'); e.currentTarget.disabled = false; } } }, 'موافقة وتوثيق'),
+        h('button', { class: 'btn danger sm', onclick: async (e) => { e.currentTarget.disabled = true; try { await sb.rpc('owner_review_verification', { p_request_id: r.request_id, p_approve: false, p_note: '' }); toast('تم رفض الطلب', 'ok'); await load(); } catch (er) { toast(er.message, 'err'); e.currentTarget.disabled = false; } } }, 'رفض')) : h('span', { class: 'muted small' }, r.status === 'approved' ? 'تمت الموافقة' : 'مرفوض');
+      list.append(h('div', { class: 'user-row verify-admin-row' }, avatar(r, 44), h('div', { class: 'grow' }, h('b', null, r.display_name || r.username), h('div', { class: 'muted small' }, '@' + r.username + ' · ' + timeAgo(r.created_at)), r.reason && h('div', { class: 'muted small' }, r.reason), h('div', { class: 'muted small' }, 'الحالة: ' + r.status)), actions));
+    });
+  }
+  await load();
+  const verified = await sb.rpc('owner_list_verified_accounts');
+  box.append(h('h4', { class: 'sec' }, 'الحسابات الموثّقة'), h('div', { class: 'card-list' }, (verified || []).map((u) => h('div', { class: 'user-row' }, avatar(u, 40), h('div', { class: 'grow' }, h('b', null, u.display_name || u.username), h('div', { class: 'muted small' }, '@' + u.username)), h('button', { class: 'btn danger sm', onclick: async (e) => { if (!(await confirmBox('سحب شارة التوثيق من هذا الحساب؟', 'سحب التوثيق', true))) return; e.currentTarget.disabled = true; try { await sb.rpc('owner_set_verified', { p_user_id: u.user_id, p_verified: false }); toast('تم سحب التوثيق', 'ok'); clear(box); await verificationTab(box); } catch (er) { toast(er.message, 'err'); e.currentTarget.disabled = false; } } }, 'سحب الشارة')))));
 }

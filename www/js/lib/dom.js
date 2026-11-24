@@ -151,3 +151,8 @@ export function dayLabel(iso) {
 export const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n));
 export const roleLabel = { OWNER: 'المالك', ADMIN: 'مشرف عام', MODERATOR: 'مراقب', USER: 'مستخدم' };
 export function badge(role) { return role && role !== 'USER' ? h('span', { class: 'role-badge ' + role }, roleLabel[role]) : null; }
+
+// Official red verification mark; granted only by the account owner.
+export function verifiedBadge(verified) {
+  return verified ? h('span', { class: 'verified-badge', title: 'حساب موثّق بموافقة المالك', 'aria-label': 'حساب موثّق' }, '✓') : null;
+}

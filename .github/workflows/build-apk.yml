@@ -35,6 +35,11 @@ jobs:
           for d in branding/res/mipmap-*; do mkdir -p $R/$(basename $d); cp $d/*.png $R/$(basename $d)/; done
           sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">NEXORA</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">NEXORA</string>|' $R/values/strings.xml
           grep -n "app_name" $R/values/strings.xml
+      - name: Native plugins (audio route, update opener)
+        run: |
+          D=android/app/src/main/java/com/m17/social
+          mkdir -p $D && cp native/*.java $D/
+          ls $D
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android

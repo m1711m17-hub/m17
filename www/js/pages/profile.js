@@ -1,4 +1,4 @@
-import { h, icon, avatar, clear, toast, sheet, actionSheet, confirmBox, badge, compact } from '../lib/dom.js';
+import { h, icon, avatar, clear, toast, sheet, actionSheet, confirmBox, badge, verifiedBadge, compact } from '../lib/dom.js';
 import { sb, state, enrichPosts, uploadMedia, POST_SELECT, PROFILE_MINI } from '../api.js';
 import { postCard, blockUser, reportDialog } from './postcard.js';
 import { headerBar } from './home.js';
@@ -30,7 +30,7 @@ async function userListSheet(title, profileId, which) {
       const rows = await sb.from('follows').select(`${other},p:profiles!follows_${other}_fkey(${PROFILE_MINI})`).eq(col, profileId).order('created_at', { ascending: false }).limit(200);
       clear(body);
       if (!rows.length) body.append(h('div', { class: 'empty small' }, 'لا يوجد أحد بعد'));
-      rows.forEach((r) => body.append(h('a', { class: 'user-row', href: `#/u/${r.p.username}`, onclick: () => document.querySelector('.sheet-back')?.remove() }, avatar(r.p, 42), h('div', { class: 'grow' }, h('b', null, r.p.display_name || r.p.username), h('div', { class: 'muted small' }, '@' + r.p.username)))));
+      rows.forEach((r) => body.append(h('a', { class: 'user-row', href: `#/u/${r.p.username}`, onclick: () => document.querySelector('.sheet-back')?.remove() }, avatar(r.p, 42), h('div', { class: 'grow' }, h('b', null, r.p.display_name || r.p.username, verifiedBadge(r.p.is_verified)), h('div', { class: 'muted small' }, '@' + r.p.username)))));
     } catch (e) { clear(body).append(h('div', { class: 'empty small' }, e.message)); }
   }, { full: true });
 }
@@ -89,15 +89,43 @@ export async function profilePage(root, params) {
         { label: 'حظر المستخدم', icon: 'block', danger: true, run: async () => { if (await blockUser(p)) location.hash = '#/home'; } },
       ]) }, icon('more', 20)));
 
+  async function verificationSheet() {
+    sheet('توثيق الحساب', async (body, close) => {
+      const reason = h('textarea', { class: 'input', rows: 3, maxlength: 500, placeholder: 'اكتب سبب طلب التوثيق (اختياري)' });
+      const statusBox = h('div', { class: 'muted small' }, 'جارٍ تحميل حالة الطلب...');
+      body.append(h('p', { class: 'muted small' }, 'يمكنك إرسال طلب واحد قيد المراجعة. المالك وحده يقرر قبول الطلب أو رفضه.'), statusBox);
+      let pending = false;
+      try {
+        const rows = await sb.rpc('my_verification_request');
+        const latest = Array.isArray(rows) ? rows[0] : rows;
+        if (latest) {
+          statusBox.textContent = ({ pending: 'طلبك قيد مراجعة المالك', approved: 'تمت الموافقة على توثيق حسابك', rejected: 'تم رفض طلب التوثيق' })[latest.status] || 'لا يوجد طلب';
+          pending = latest.status === 'pending';
+        } else statusBox.textContent = 'لم ترسل طلب توثيق بعد';
+      } catch (e) { statusBox.textContent = 'تعذّر جلب حالة الطلب. تأكد من تفعيل ميزة التوثيق في قاعدة البيانات.'; }
+      if (p.is_verified) { statusBox.textContent = 'حسابك موثّق بالفعل'; return; }
+      if (pending) return;
+      body.append(reason, h('button', { class: 'btn primary block lg', onclick: async (e) => {
+        e.currentTarget.disabled = true;
+        try {
+          const result = await sb.rpc('request_verification', { p_reason: reason.value.trim() });
+          if (!result?.ok) { toast(result?.message || 'تعذّر إرسال الطلب', 'err'); e.currentTarget.disabled = false; return; }
+          toast('تم إرسال طلب التوثيق للمالك', 'ok'); close();
+        } catch (er) { toast(er.message, 'err'); e.currentTarget.disabled = false; }
+      } }, 'إرسال طلب التوثيق'));
+    });
+  }
+
   box.append(h('section', { class: 'profile-card' },
     h('div', { class: 'cover' }),
     h('div', { class: 'pc-main' }, avatar(p, 92, true),
-      h('div', { class: 'pc-name' }, p.display_name || p.username, badge(p.role)),
+      h('div', { class: 'pc-name' }, p.display_name || p.username, badge(p.role), verifiedBadge(p.is_verified)),
       h('div', { class: 'muted' }, '@' + p.username, p.is_private ? ' · 🔒 حساب خاص' : ''),
       p.bio && h('p', { class: 'bio' }, p.bio),
       h('div', { class: 'stats' }, stat(nPosts, 'منشور', () => {}), stat(nFollowers, 'متابِع', () => userListSheet('المتابِعون', p.id, 'followers')), stat(nFollowing, 'يتابع', () => userListSheet('يتابع', p.id, 'following'))),
       actions)));
 
+  if (isMe && !p.is_verified) box.append(h('div', { class: 'verify-request-wrap' }, h('button', { class: 'btn ghost block', onclick: verificationSheet }, '✓ طلب توثيق الحساب')));
   const postsBox = h('div', { class: 'feed' });
   box.append(isMe ? quickComposer() : null, h('h3', { class: 'sec' }, 'المنشورات'), postsBox);
   try {

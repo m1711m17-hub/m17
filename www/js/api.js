@@ -7,7 +7,7 @@ export const state = { me: null, perms: [], flags: {}, unreadNotifs: 0, unreadCh
 export const hasPerm = (p) => state.perms.includes(p);
 export const isStaff = () => ['OWNER', 'ADMIN', 'MODERATOR'].includes(state.me?.role);
 
-export const PROFILE_MINI = 'id,username,display_name,avatar_url,role,is_private';
+export const PROFILE_MINI = 'id,username,display_name,avatar_url,role,is_private,is_verified';
 export const POST_SELECT = `*,author:profiles!posts_author_id_fkey(${PROFILE_MINI}),likes(count),comments(count),shares(count)`;
 
 export async function loadMe() {
