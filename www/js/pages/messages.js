@@ -61,7 +61,7 @@ export async function messagesPage(root) {
   await load();
   let t = null; const soon = () => { clearTimeout(t); t = setTimeout(load, 350); };
   ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.addEventListener(e, soon));
-  const iv = setInterval(() => { if (!document.hidden) load(); }, rtLive() ? 30000 : 6000);
+  const iv = setInterval(() => { if (!document.hidden && !rtLive()) load(); }, 6000);
   return () => { unwatchList(); clearInterval(iv); clearTimeout(t); ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.removeEventListener(e, soon)); };
 }
 
