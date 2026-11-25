@@ -5,6 +5,7 @@ import { pickPeople } from './people.js';
 import { VIS_LABEL } from './stories.js';
 import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
+import { checkForUpdates, updateState, getWhatsappUrl, openExternal, updateCard } from '../update.js';
 
 export async function settingsPage(root, params, ctx) {
   const box = h('div', { class: 'page' });
@@ -93,6 +94,15 @@ export async function settingsPage(root, params, ctx) {
       await new Promise((r) => setTimeout(r, 1500));
       try { const r = await sb.rpc('send_test_push'); toast(r?.ok ? 'أُرسل إشعار تجريبي، انتظر ثوانٍ قليلة' : 'لم يُسجَّل هذا الجهاز بعد، أعد المحاولة بعد لحظات', r?.ok ? 'ok' : 'err'); } catch (e) { toast(e.message, 'err'); }
     })));
+
+  const wa = await getWhatsappUrl();
+  const verRow = row('download', 'التحقق من التحديثات', 'إصدارك: ' + (updateState.current || '—'), null, async () => {
+    const i = await checkForUpdates({ force: true });
+    if (!i) return toast('أنت تستخدم أحدث إصدار', 'ok');
+    sheet('تحديث متاح', (b) => b.append(updateCard(h)));
+  });
+  box.append(h('h4', { class: 'sec' }, 'التطبيق'), h('div', { class: 'card-list' }, verRow,
+    wa ? row('chat', 'مجموعة واتساب', 'انضم للدعم والأخبار', null, () => openExternal(wa)) : null));
 
   box.append(h('h4', { class: 'sec' }, 'الجلسة'),
     h('div', { class: 'card-list' },

@@ -594,3 +594,6 @@ body.in-chat .tabbar{display:none}
 .group-chat-root .bubble{max-width:86%}
 .group-chat-root .chat-bar{gap:8px}
 .group-chat-root .chat-input{min-height:44px}
+.upd-card{width:calc(100% - 24px);margin:10px 12px;padding:14px;border-radius:16px;border:1px solid #2a7fff;background:linear-gradient(135deg,#0d1f44,#12183a);color:#fff;text-align:right;display:flex;flex-direction:column;gap:8px}
+.upd-card.wa{border-color:#25d366;background:linear-gradient(135deg,#0b2a1c,#0e1a2a);cursor:pointer}
+.upd-card .muted.sm{font-size:12px}

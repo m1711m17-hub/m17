@@ -1,6 +1,7 @@
 import { h, icon, avatar, clear, toast, sheet, actionSheet, confirmBox, timeAgo, badge, roleLabel } from '../lib/dom.js';
 import { sb, state, hasPerm, POST_SELECT, PROFILE_MINI } from '../api.js';
 import { headerBar } from './home.js';
+import { resetWhatsappCache } from '../update.js';
 
 const STAT_LABELS = { users: 'المستخدمون', new_users_7d: 'جدد (7 أيام)', disabled_users: 'معطّلون', posts: 'المنشورات', comments: 'التعليقات', likes: 'الإعجابات', messages: 'الرسائل', active_stories: 'حالات نشطة', open_reports: 'بلاغات مفتوحة' };
 const ACTION_LABELS = { 'user.disable': 'تعطيل حساب', 'user.enable': 'تفعيل حساب', 'user.delete': 'حذف حساب', 'user.set_role': 'تغيير دور', 'post.delete': 'حذف منشور', 'post.hide': 'إخفاء منشور', 'post.unhide': 'إظهار منشور', 'comment.delete': 'حذف تعليق', 'report.resolved': 'معالجة بلاغ', 'report.dismissed': 'رفض بلاغ', 'broadcast.send': 'إشعار عام', 'feature.set': 'ميزة', 'setting.set': 'إعداد', 'permission.set': 'صلاحية', 'permission.add': 'إضافة صلاحية', 'owner.claimed': 'تفعيل المالك' };
@@ -14,6 +15,7 @@ export async function adminPage(root) {
     ['posts', 'المنشورات', 'image', hasPerm('posts.view_all'), postsTab],
     ['reports', 'البلاغات', 'flag', hasPerm('reports.review'), reportsTab],
     ['broadcast', 'إشعار عام', 'megaphone', hasPerm('notifications.broadcast'), broadcastTab],
+    ['appset', 'رابط واتساب', 'link', hasPerm('settings.manage'), appSettingsTab],
     ['features', 'المميزات', 'toggle', hasPerm('features.manage'), featuresTab],
     ['roles', 'الصلاحيات', 'shield', isOwner(), rolesTab],
     ['verification', 'التوثيق', 'badge-check', isOwner(), verificationTab],
@@ -115,6 +117,19 @@ async function broadcastTab(box) {
       e.target.disabled = true;
       try { const n = await sb.rpc('admin_broadcast', { p_title: title.value.trim(), p_body: body.value.trim() }); toast(`أُرسل إلى ${n} مستخدم`, 'ok'); title.value = ''; body.value = ''; } catch (er) { toast(er.message, 'err'); } finally { e.target.disabled = false; }
     } }, icon('megaphone', 20), 'إرسال للجميع'));
+}
+
+async function appSettingsTab(box) {
+  let cur = ''; try { const r = await sb.from('app_settings').select('value').eq('key', 'whatsapp_group_url').one(); if (typeof r?.value === 'string') cur = r.value; } catch {}
+  const inp = h('input', { class: 'input', dir: 'ltr', placeholder: 'https://chat.whatsapp.com/...', value: cur });
+  box.append(h('p', { class: 'muted' }, 'رابط مجموعة الواتساب. يظهر لجميع المستخدمين في الإشعارات والإعدادات. اتركه فارغاً لإخفائه.'), inp,
+    h('button', { class: 'btn primary block lg', onclick: async (e) => {
+      const v = inp.value.trim();
+      if (v && !/^https:\/\/\S+$/i.test(v)) return toast('يجب أن يبدأ الرابط بـ https://', 'err');
+      e.target.disabled = true;
+      try { await sb.rpc('admin_set_setting', { p_key: 'whatsapp_group_url', p_value: v }); resetWhatsappCache(); toast('تم الحفظ', 'ok'); } catch (er) { toast(er.message, 'err'); }
+      e.target.disabled = false;
+    } }, 'حفظ'));
 }
 
 async function featuresTab(box) {

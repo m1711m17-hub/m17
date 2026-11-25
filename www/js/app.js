@@ -147,4 +147,5 @@ CapApp?.addListener?.('backButton', () => {
 window.addEventListener('unhandledrejection', (e) => { if (e.reason && e.reason.message) console.warn(e.reason); });
 boot();
 // Check for a newer NEXORA release after the first screen has had time to load.
-setTimeout(() => checkForUpdates(), 12000);;
+setTimeout(() => checkForUpdates(), 6000);
+window.addEventListener('m17:resume', () => checkForUpdates());

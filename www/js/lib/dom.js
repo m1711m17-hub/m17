@@ -77,6 +77,8 @@ const P = {
   videooff: '<path d="m3 3 18 18"/><path d="M16 11.5V8l6-3v14l-4-2M11 6H5a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h9a3 3 0 0 0 2-.8"/>',
   phoneoff: '<path d="M10.7 13.3a14 14 0 0 1-2.5-3.4L10 8.8 8.5 5H5a2 2 0 0 0-2 2c0 1.7.4 3.3 1.1 4.8"/><path d="m3 3 18 18"/><path d="M13 16.8c1.6.8 3.4 1.2 5 1.2a2 2 0 0 0 2-2v-3.5l-4-1.5"/>',
   play: '<path d="m7 4 13 8-13 8z"/>',
+  download: '<path d="M12 3v12m0 0-4-4m4 4 4-4M4 20h16"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
 };
 export function icon(name, size = 22, cls = '') {
