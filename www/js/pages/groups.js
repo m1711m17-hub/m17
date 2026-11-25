@@ -171,6 +171,7 @@ export async function groupChatPage(root, params) {
   const seen = new Set();
   let lastDay = '';
   let busy = false;
+  let sending = false;
   let stopped = false;
   let channel = null;
 
@@ -212,7 +213,8 @@ export async function groupChatPage(root, params) {
 
   async function send() {
     const body = input.value.trim();
-    if (!body || busy) return;
+    if (!body || sending) return;
+    sending = true;
     sendBtn.disabled = true;
     try {
       await sb.from('group_messages').insert({ group_id: params.id, sender_id: state.me.id, body });
@@ -223,6 +225,7 @@ export async function groupChatPage(root, params) {
     } catch (error) {
       toast(error.message || 'تعذّر إرسال الرسالة', 'err');
     } finally {
+      sending = false;
       sendBtn.disabled = false;
       input.focus({ preventScroll: true });
     }

@@ -76,7 +76,7 @@ async function route() {
 function restoreRoute() {
   try {
     const r = JSON.parse(localStorage.getItem('m17.route') || 'null');
-    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|groups|group\/|explore|profile|notifications|settings)/.test(r.h)) return r.h;
+    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|explore|profile|notifications|settings)/.test(r.h)) return r.h;
   } catch {}
   return null;
 }
@@ -140,7 +140,7 @@ CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
   const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
-  if (/^\/(chat\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
+  if (/^\/(chat\/|group\/|groups|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
   CapApp.minimizeApp?.();
 });
