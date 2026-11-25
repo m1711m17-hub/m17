@@ -134,7 +134,7 @@ export async function groupsPage(root) {
 }
 
 export async function groupChatPage(root, params) {
-  root.classList.add('chat-root');
+  root.classList.add('chat-root', 'group-chat-root');
   let group, membership, memberRows = [];
   const people = new Map();
 
@@ -154,7 +154,7 @@ export async function groupChatPage(root, params) {
     if (!membership) throw new Error('أنت لست عضواً في هذه المجموعة');
     await refreshMembers();
   } catch (error) {
-    root.classList.remove('chat-root');
+    root.classList.remove('chat-root', 'group-chat-root');
     root.append(headerBar('المجموعة', { back: true }), h('div', { class: 'empty' }, icon('users', 42), h('p', null, missingSchemaMessage(error))));
     return;
   }
@@ -309,6 +309,6 @@ export async function groupChatPage(root, params) {
     clearInterval(timer);
     bus.removeEventListener('rt:ready', attachRealtime);
     channel?.unsubscribe();
-    root.classList.remove('chat-root');
+    root.classList.remove('chat-root', 'group-chat-root');
   };
 }
