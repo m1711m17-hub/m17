@@ -597,3 +597,20 @@ body.in-chat .tabbar{display:none}
 .upd-card{width:calc(100% - 24px);margin:10px 12px;padding:14px;border-radius:16px;border:1px solid #2a7fff;background:linear-gradient(135deg,#0d1f44,#12183a);color:#fff;text-align:right;display:flex;flex-direction:column;gap:8px}
 .upd-card.wa{border-color:#25d366;background:linear-gradient(135deg,#0b2a1c,#0e1a2a);cursor:pointer}
 .upd-card .muted.sm{font-size:12px}
+
+/* ===== group info / manage ===== */
+.group-info .gi-head{text-align:center;padding:10px 0 6px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.group-info .gi-head h2{margin:4px 0 0}
+.gi-av{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.gi-av .link{color:var(--cyan,#22d3ee)}
+.gi-acts{display:flex;justify-content:center;gap:12px;margin:12px 0}
+.gi-act{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:inherit;font-size:.8rem}
+.gi-act-i{display:grid;place-items:center}
+.gi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.gi-grid img,.gi-grid video{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#0003}
+.invite-code{font-size:1.6rem;letter-spacing:.15em;text-align:center;padding:16px;border-radius:14px;background:rgba(255,255,255,.06);margin:10px 0;font-weight:800}
+.set-row.danger b{color:#ff5a6e}
+.bubble.flash{animation:bflash 1.3s}
+@keyframes bflash{0%,60%{box-shadow:0 0 0 3px rgba(34,211,238,.7)}100%{box-shadow:none}}
+.group-chat-root .rec-bar.grp{display:flex;align-items:center;gap:10px;flex:1}
+.group-chat-root .group-title{color:inherit;text-decoration:none}

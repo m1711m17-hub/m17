@@ -7,7 +7,8 @@ import { homePage } from './pages/home.js';
 import { explorePage } from './pages/explore.js';
 import { composePage } from './pages/compose.js';
 import { messagesPage, chatPage } from './pages/messages.js';
-import { groupsPage, groupChatPage } from './pages/groups.js';
+import { groupsPage, groupChatPage, joinRoute, initGroupAlerts } from './pages/groups.js';
+import { groupInfoPage } from './pages/group-info.js';
 import { notificationsPage } from './pages/notifications.js';
 import { profilePage } from './pages/profile.js';
 import { settingsPage } from './pages/settings.js';
@@ -20,7 +21,7 @@ import { checkForUpdates } from './update.js';
 const root = document.getElementById('root');
 const ROUTES = [
   [/^\/home$/, 'home', homePage], [/^\/explore$/, 'explore', explorePage], [/^\/compose$/, 'compose', composePage],
-  [/^\/messages$/, 'messages', messagesPage], [/^\/groups$/, 'messages', groupsPage], [/^\/group\/([0-9a-f-]{36})$/, 'messages', groupChatPage, ['id']], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
+  [/^\/messages$/, 'messages', messagesPage], [/^\/groups$/, 'messages', groupsPage], [/^\/group\/([0-9a-f-]{36})$/, 'messages', groupChatPage, ['id']], [/^\/group\/([0-9a-f-]{36})\/info$/, 'messages', groupInfoPage, ['id']], [/^\/join\/([a-z0-9]{6,20})$/, 'messages', joinRoute, ['code']], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
   [/^\/notifications$/, 'none', notificationsPage], [/^\/profile$/, 'profile', profilePage],
   [/^\/u\/([a-z0-9_]+)$/, 'profile', profilePage, ['username']], [/^\/settings$/, 'profile', settingsPage],
   [/^\/admin$/, 'profile', adminPage], [/^\/calls$/, 'messages', callsPage], [/^\/post\/([0-9a-f-]{36})$/, 'none', postPage, ['id']],
@@ -103,7 +104,7 @@ async function boot() {
   await route();
   refreshBadges();
   initPush();
-  startRealtime(); initCalls(); try { initInvites(); } catch (e) { console.warn(e); } touchPresence();
+  startRealtime(); initCalls(); try { initGroupAlerts(); } catch (e) { console.warn(e); } try { initInvites(); } catch (e) { console.warn(e); } touchPresence();
   badgeTimer = setInterval(() => { if (!document.hidden) refreshBadges(); }, POLL_BADGE_MS);
 }
 
@@ -140,7 +141,7 @@ CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
   const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
-  if (/^\/(chat\/|group\/|groups|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
+  if (/^\/(chat\/|group\/|groups|join\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
   CapApp.minimizeApp?.();
 });
