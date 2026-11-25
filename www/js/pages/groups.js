@@ -1,5 +1,5 @@
 import { h, icon, avatar, clear, toast, timeAgo, hhmm, dayLabel, sheet, actionSheet, confirmBox } from '../lib/dom.js';
-import { sb, state, PROFILE_MINI, rt, bus } from '../api.js';
+import { sb, state, PROFILE_MINI, rt, bus, uploadMedia } from '../api.js';
 import { headerBar, bellButton } from './home.js';
 import { pickPeople } from './people.js';
 
@@ -162,11 +162,22 @@ export async function groupChatPage(root, params) {
   const messages = h('div', { class: 'chat-msgs' });
   const input = h('textarea', { class: 'input chat-input', rows: 1, maxlength: 2000, placeholder: 'اكتب رسالة للمجموعة...' });
   const sendBtn = h('button', { class: 'icon-btn accent', type: 'button', 'aria-label': 'إرسال الرسالة', onclick: send }, icon('send', 22));
+  const fileIn = h('input', { type: 'file', accept: 'image/*,video/*', style: { display: 'none' } });
+  const attachBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إرفاق صورة أو فيديو', onclick: () => fileIn.click() }, icon('image', 22));
+  fileIn.addEventListener('change', async () => {
+    const f = fileIn.files[0]; fileIn.value = ''; if (!f) return;
+    try {
+      toast('جارٍ الرفع...');
+      const m = await uploadMedia('chat', f);
+      await sb.from('group_messages').insert({ group_id: params.id, sender_id: state.me.id, body: '', media_url: m.url, media_type: f.type.startsWith('video') ? 'video' : 'image' });
+      await poll(); messages.scrollTop = messages.scrollHeight;
+    } catch (error) { toast(error.message || 'تعذّر إرسال الملف', 'err'); }
+  });
   const memberCount = h('div', { class: 'muted small' }, memberRows.length + ' أعضاء');
   const title = h('div', { class: 'group-title' }, h('b', null, group.name), memberCount);
   const moreBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'خيارات المجموعة', onclick: openGroupMenu }, icon('more', 22));
 
-  root.append(headerBar(title, { back: true, right: [moreBtn] }), messages, h('div', { class: 'chat-bar' }, input, sendBtn));
+  root.append(headerBar(title, { back: true, right: [moreBtn] }), messages, h('div', { class: 'chat-bar' }, attachBtn, fileIn, input, sendBtn));
 
   const seen = new Set();
   let lastDay = '';
@@ -190,7 +201,10 @@ export async function groupChatPage(root, params) {
       const sender = people.get(message.sender_id);
       const content = [];
       if (!mine) content.push(h('b', { class: 'group-sender' }, sender?.display_name || sender?.username || 'عضو'));
-      content.push(h('div', { class: 'b-text' }, message.body || (message.media_type === 'video' ? '🎬 فيديو' : '🖼️ صورة')));
+      if (message.media_url) content.push(message.media_type === 'video'
+        ? h('video', { src: message.media_url, controls: true, preload: 'metadata', style: { maxWidth: '100%', borderRadius: '12px' } })
+        : h('img', { src: message.media_url, loading: 'lazy', style: { maxWidth: '100%', borderRadius: '12px', display: 'block' }, onclick: () => window.open(message.media_url, '_blank') }));
+      if (message.body) content.push(h('div', { class: 'b-text' }, message.body));
       content.push(h('div', { class: 'b-meta' }, hhmm(message.created_at)));
       messages.append(h('div', { class: 'bubble ' + (mine ? 'me' : 'them') }, ...content));
       added = true;
@@ -249,13 +263,27 @@ export async function groupChatPage(root, params) {
         if (!memberRows.length) body.append(h('div', { class: 'empty small' }, 'لا يوجد أعضاء'));
         memberRows.forEach((row) => {
           const person = people.get(row.user_id) || { username: 'member', display_name: 'عضو' };
+          const isMe = row.user_id === state.me.id;
+          const manage = membership.role === 'admin' && !isMe ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إدارة العضو', onclick: () => manageMember(row, person) }, icon('more', 20)) : null;
           body.append(h('div', { class: 'user-row' }, avatar(person, 40),
             h('div', { class: 'grow' }, h('b', null, person.display_name || person.username),
               h('div', { class: 'muted small' }, '@' + (person.username || ''))),
-            h('span', { class: 'muted small' }, row.role === 'admin' ? 'مشرف' : 'عضو')));
+            h('span', { class: 'muted small' }, row.role === 'admin' ? 'مشرف' : 'عضو'), manage));
         });
       }, { full: true });
     } catch (error) { toast(error.message, 'err'); }
+  }
+
+  function manageMember(row, person) {
+    const name = person.display_name || person.username || 'العضو';
+    const refresh = async () => { await refreshMembers(); memberCount.textContent = memberRows.length + ' أعضاء'; };
+    actionSheet(name, [
+      { label: row.role === 'admin' ? 'إزالة صلاحية المشرف' : 'جعله مشرفاً', icon: 'shield', run: async () => {
+        try { await sb.rpc('set_group_role', { p_group_id: params.id, p_user_id: row.user_id, p_role: row.role === 'admin' ? 'member' : 'admin' }); await refresh(); toast('تم التحديث', 'ok'); } catch (e) { toast(e.message, 'err'); } } },
+      { label: 'إزالة من المجموعة', icon: 'close', danger: true, run: async () => {
+        if (!(await confirmBox('إزالة ' + name + ' من المجموعة؟', 'إزالة', true))) return;
+        try { await sb.from('group_members').delete().eq('group_id', params.id).eq('user_id', row.user_id); await refresh(); toast('تمت الإزالة', 'ok'); } catch (e) { toast(e.message, 'err'); } } },
+    ]);
   }
 
   async function addMembers() {

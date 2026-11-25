@@ -2,7 +2,6 @@
 -- شغّل هذا الملف مرة واحدة من Supabase Dashboard > SQL Editor.
 -- رسائل المجموعات مستقلة عن جدول الرسائل الخاصة.
 
-begin;
 
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
@@ -224,4 +223,24 @@ begin
 end;
 $$;
 
-commit;
+
+-- member role management (promote / demote) — admins only, never leaves a group without an admin
+create or replace function public.set_group_role(p_group_id uuid, p_user_id uuid, p_role text)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null or not public.is_group_admin(p_group_id) then raise exception 'متاح لمشرفي المجموعة فقط'; end if;
+  if p_role not in ('admin','member') then raise exception 'دور غير صالح'; end if;
+  if p_role = 'member' and p_user_id = auth.uid()
+     and (select count(*) from public.group_members where group_id = p_group_id and role = 'admin') < 2 then
+    raise exception 'يجب أن يبقى مشرف واحد على الأقل';
+  end if;
+  update public.group_members set role = p_role where group_id = p_group_id and user_id = p_user_id;
+  return found;
+end;
+$$;
+revoke all on function public.set_group_role(uuid, uuid, text) from public;
+grant execute on function public.set_group_role(uuid, uuid, text) to authenticated;
+
+-- Supabase grants EXECUTE to anon by default: remove it for every group function.
+revoke execute on function public.is_group_member(uuid), public.is_group_admin(uuid), public.create_group(text, text, uuid[]),
+  public.add_group_members(uuid, uuid[]), public.leave_group(uuid), public.set_group_role(uuid, uuid, text), public.touch_group_last_message() from anon, public;
