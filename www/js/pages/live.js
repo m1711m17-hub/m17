@@ -5,6 +5,7 @@
 import { h, icon, avatar, toast, confirmBox, clear, sheet } from '../lib/dom.js';
 import { sb, state, bus, rt, rtLive, beaconRpc, PROFILE_MINI } from '../api.js';
 import { ICE_SERVERS, refreshIce } from '../config.js';
+import { loadLK, lkToken, enc, dec } from '../lib/livekit.js';
 
 export const MAX_VIEWERS = 6;
 let hostSession = null, watchSession = null;
@@ -259,6 +260,7 @@ function openLiveInner() {
       const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: s.facing }, width: { ideal: 1280 }, height: { ideal: 720 } } }); const nt = ns.getVideoTracks()[0];
       const ot = s.stream.getVideoTracks()[0]; ot?.stop(); if (ot) s.stream.removeTrack(ot); s.stream.addTrack(nt);
       for (const p of s.peers.values()) { const snd = p.pc.getSenders().find((x) => x.track?.kind === 'video' || x.__v); if (snd) await snd.replaceTrack(nt); }
+      lkSwap('video', nt);
       preview.srcObject = s.stream; preview.classList.toggle('mirror', s.facing === 'user');
     } catch { s.facing = old; toast('تعذّر تبديل الكاميرا', 'err'); }
   }
@@ -285,7 +287,7 @@ function openLiveInner() {
       if (!r?.ok) throw new Error('تعذّر بدء البث');
       s.id = r.id; s.t0 = Date.now(); s.title = title.value.trim();
     } catch (e) { startBtn.disabled = false; return toast(e.message, 'err'); }
-    setupAudio();
+    setupAudio(); lkHostStart();
     setup.hidden = true; bgc.style.display = 'none'; preview.style.display = ''; preview.srcObject = s.stream; preview.classList.toggle('mirror', s.mode === 'camera' && s.facing === 'user'); preview.classList.toggle('cover', true); preview.play?.().catch(() => {});
     const endBtn = h('button', { class: 'lx-end', type: 'button', onclick: () => requestClose() }, h('i', { class: 'lx-sq' }), h('span', null, 'إنهاء البث'));
     const ov = s.ov = buildOverlay({
@@ -312,9 +314,29 @@ function openLiveInner() {
     s.timers.push(setInterval(ping, 8000)); s.timers.push(setInterval(pollSig, 2000)); ping(); toast('بدأ البث المباشر 🔴');
   }
   // ---- guests (invited people who talk with you): their mic is mixed into the broadcast audio ----
+  // ---- SFU (LiveKit): the host publishes once; unlimited viewers subscribe. Falls back to P2P when unavailable. ----
+  async function lkHostStart() {
+    const LK = await loadLK(); if (!LK) return;
+    try {
+      const t = await lkToken(s.id, 'host'); if (!t?.ok || s.ended) return;
+      const room = new LK.Room({ dynacast: true });
+      room.on(LK.RoomEvent.DataReceived, (payload, part) => { try { chatFrom(part?.identity, JSON.parse(dec(payload))); } catch {} });
+      await room.connect(t.url, t.token);
+      if (s.ended) { room.disconnect(); return; }
+      s.lk = { room, LK };
+      const [v, a] = sendTracks();
+      if (v) await room.localParticipant.publishTrack(v, { source: LK.Track.Source.Camera, videoEncoding: { maxBitrate: 1500000, maxFramerate: 30 } });
+      if (a) await room.localParticipant.publishTrack(a, { source: LK.Track.Source.Microphone });
+      await sb.rpc('set_live_lk', { p_id: s.id, p_on: true });
+    } catch { try { s.lk?.room.disconnect(); } catch {} s.lk = null; }
+  }
+  function lkSwap(kind, track) {
+    try { const pub = [...s.lk.room.localParticipant.trackPublications.values()].find((x) => x.kind === kind); pub?.track?.replaceTrack(track); } catch {}
+  }
   function useRawAudio() {
     s.mixTrack = null; try { s.actx?.close(); } catch {} s.actx = null;
     const raw = s.stream?.getAudioTracks()[0]; if (!raw) return;
+    lkSwap('audio', raw);
     for (const p of s.peers.values()) { try { const snd = p.pc.getSenders().find((x) => x.track?.kind === 'audio' || x.__a); if (snd) snd.replaceTrack(raw); } catch {} }
   }
   function sendTracks() { const v = s.stream.getVideoTracks()[0], a = s.mixTrack || s.stream.getAudioTracks()[0]; return [v, a].filter(Boolean); }
@@ -359,7 +381,17 @@ function openLiveInner() {
     if (p && s.mixTrack) { try { g.tr.direction = 'sendonly'; await g.tr.sender.replaceTrack(s.mixTrack); await renego(p); } catch {} }
   }
   function openInvite() { pickPeople(s.sentInv, (p) => { if (s.id) sendInviteTo(p, s.id, s.title); else { s.queue.push(p); toast('ستصله الدعوة عند بدء البث'); } }); }
-  function broadcast(m, exceptUid) { const data = JSON.stringify(m); for (const [uid, p] of s.peers) if (uid !== exceptUid && p.dc?.readyState === 'open') { try { p.dc.send(data); } catch {} } }
+  function broadcast(m, exceptUid) {
+    const data = JSON.stringify(m); for (const [uid, p] of s.peers) if (uid !== exceptUid && p.dc?.readyState === 'open') { try { p.dc.send(data); } catch {} }
+    try { s.lk?.room.localParticipant.publishData(enc(data), { reliable: true }); } catch {}
+  }
+  const lastChat = new Map();
+  function chatFrom(uid, m) {
+    if (!uid || !m || !['c', 'h', 'g'].includes(m.t) || (m.t === 'c' && !s.opts.comments) || (m.t === 'g' && !s.opts.gifts)) return;
+    const now = Date.now(); if (now - (lastChat.get(uid) || 0) < 400) return; lastChat.set(uid, now);
+    const clean = { t: m.t, u: uid, n: String(m.n || '').slice(0, 30), a: typeof m.a === 'string' && m.a.startsWith('http') ? m.a : null, x: String(m.x || '').slice(0, 160), g: GIFTS.includes(m.g) ? m.g : undefined };
+    s.ov?.addComment(clean); broadcast(clean, uid);
+  }
   async function ping() {
     try { const r = await sb.rpc('ping_live', { p_id: s.id }); if (r?.status === 'none' || r?.status === 'ended') return finish('انتهى البث'); s.ov?.setViewers(r?.viewers ?? 0); } catch {}
   }
@@ -378,16 +410,14 @@ function openLiveInner() {
     } catch { /* bad signal */ }
   }
   async function addViewer(uid) {
-    dropViewer(uid);
+    dropViewer(uid); if (s.peers.size >= MAX_VIEWERS) return; // P2P capacity; more viewers use the media server
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
     const p = { pc, remoteSet: false, ice: [], dc: null }; s.peers.set(uid, p);
     const dc = p.dc = pc.createDataChannel('chat');
-    let last = 0;
     dc.onmessage = (e) => {
       try {
-        const m = JSON.parse(e.data); if (m && m.t === 'acc') return startGuest(uid, m); if (m && m.t === 'ans') return gotAnswer(uid, m); if (m && m.t === 'leave') return endGuest(uid); if (!m || !['c', 'h', 'g'].includes(m.t) || (m.t === 'c' && !s.opts.comments) || (m.t === 'g' && !s.opts.gifts)) return; const now = Date.now(); if (now - last < 400) return; last = now;
-        const clean = { t: m.t, u: uid, n: String(m.n || '').slice(0, 30), a: typeof m.a === 'string' && m.a.startsWith('http') ? m.a : null, x: String(m.x || '').slice(0, 160), g: GIFTS.includes(m.g) ? m.g : undefined };
-        s.ov?.addComment(clean); broadcast(clean, uid);
+        const m = JSON.parse(e.data); if (m && m.t === 'acc') return startGuest(uid, m); if (m && m.t === 'ans') return gotAnswer(uid, m); if (m && m.t === 'leave') return endGuest(uid);
+        chatFrom(uid, m);
       } catch {}
     };
     pc.onicecandidate = (e) => { if (e.candidate) sendSig(s.id, uid, 'ice', e.candidate.toJSON()); };
@@ -405,7 +435,7 @@ function openLiveInner() {
   }
   function finish(text) {
     if (s.ended) return; s.ended = true; s.timers.forEach((t) => clearInterval(t)); bus.removeEventListener('rt:live-signal', onRt);
-    for (const id of [...s.peers.keys()]) dropViewer(id);
+    for (const id of [...s.peers.keys()]) dropViewer(id); try { s.lk?.room.disconnect(); } catch {}
     s.stream?.getTracks().forEach((t) => t.stop()); try { s.actx?.close(); } catch {} voiceGuests = []; if (s.imgUrl) URL.revokeObjectURL(s.imgUrl); el.remove(); if (hostSession === s) hostSession = null;
     if (text) toast(text);
   }
@@ -433,7 +463,7 @@ export async function openWatch(live, host, opts = {}) {
   const status = h('div', { class: 'lv-msg' }, 'جارٍ الاتصال بالبث...');
   const ov = buildOverlay({
     host: host || { id: live.host_id }, isHost: false, onClose: () => leave(), onShare: () => shareLive(host, live.title),
-    onSend: (m) => { const full = { ...m, ...me() }; ov.addComment(full); if (w.dc?.readyState === 'open') { try { w.dc.send(JSON.stringify(full)); } catch {} } else toast('التعليقات غير متاحة حالياً', 'err'); },
+    onSend: (m) => { const full = { ...m, ...me() }; ov.addComment(full); if (w.lk) { try { w.lk.localParticipant.publishData(enc(full), { reliable: true, destinationIdentities: [w.hostId] }); } catch { toast('تعذّر الإرسال', 'err'); } } else if (w.dc?.readyState === 'open') { try { w.dc.send(JSON.stringify(full)); } catch {} } else toast('التعليقات غير متاحة حالياً', 'err'); },
     endBtn: h('button', { class: 'lx-end leave', type: 'button', onclick: () => leave() }, h('i', { class: 'lx-sq' }), h('span', null, 'خروج')),
   });
   ov.setViewers(live.viewers ?? 0);
@@ -448,6 +478,7 @@ export async function openWatch(live, host, opts = {}) {
 
   let r; try { r = await sb.rpc('join_live', { p_id: live.id }); } catch (e) { r = { ok: false, error: 'x', msg: e.message }; }
   if (!r?.ok) { status.textContent = r.error === 'full' ? `البث ممتلئ حالياً (الحد الأقصى ${MAX_VIEWERS} مشاهدين). حاول لاحقاً.` : r.error === 'ended' ? 'انتهى هذا البث.' : r.error === 'forbidden' ? 'هذا البث لمتابعي المضيف فقط.' : (r.msg || 'تعذّر الانضمام للبث'); w.timers.push(setTimeout(() => leave(true), 2200)); return; }
+  if (r.lk && !opts.guest && await lkWatch()) return;
   await refreshIce(2500);
   const pc = w.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
   pc.addTransceiver('video', { direction: 'recvonly' }); pc.addTransceiver('audio', { direction: 'recvonly' });
@@ -496,7 +527,25 @@ export async function openWatch(live, host, opts = {}) {
   function leave(silent) {
     if (w.ended) return; w.ended = true; w.timers.forEach((t) => { clearInterval(t); clearTimeout(t); }); if (w.onRt) bus.removeEventListener('rt:live-signal', w.onRt);
     if (r?.ok) { sendSig(w.id, w.hostId, 'bye'); sb.rpc('leave_live', { p_id: w.id }).catch(() => {}); }
-    w.mic?.getTracks().forEach((t) => t.stop()); try { w.pc?.close(); } catch {} el.remove(); if (watchSession === w) watchSession = null;
+    w.mic?.getTracks().forEach((t) => t.stop()); try { w.pc?.close(); } catch {} try { w.lk?.disconnect(); } catch {} el.remove(); if (watchSession === w) watchSession = null;
+  }
+  async function lkWatch() {
+    const LK = await loadLK(); if (!LK) return false;
+    try {
+      const t = await lkToken(w.id, 'viewer'); if (!t?.ok || w.ended) return false;
+      const room = new LK.Room({ adaptiveStream: true, dynacast: true }); const remote = new MediaStream();
+      room.on(LK.RoomEvent.TrackSubscribed, (track) => { if (!track.mediaStreamTrack) return; remote.addTrack(track.mediaStreamTrack); if (video.srcObject !== remote) video.srcObject = remote; video.play?.().catch(() => { tap.hidden = false; }); });
+      room.on(LK.RoomEvent.TrackUnsubscribed, (track) => { try { remote.removeTrack(track.mediaStreamTrack); } catch {} });
+      room.on(LK.RoomEvent.DataReceived, (payload) => { try { const m = JSON.parse(dec(payload)); if (m && ['c', 'h', 'g'].includes(m.t) && m.u !== state.me.id) ov.addComment(m); } catch {} });
+      room.on(LK.RoomEvent.Reconnecting, () => { status.hidden = false; status.textContent = 'الاتصال ضعيف...'; });
+      room.on(LK.RoomEvent.Reconnected, () => { status.hidden = true; });
+      room.on(LK.RoomEvent.Disconnected, () => { if (!w.ended) { status.hidden = false; status.textContent = 'انقطع الاتصال بالبث'; } });
+      video.addEventListener('playing', () => { status.hidden = true; });
+      await room.connect(t.url, t.token); if (w.ended) { room.disconnect(); return true; }
+      w.lk = room;
+      w.timers.push(setInterval(async () => { try { const v = await sb.rpc('view_ping', { p_id: w.id }); ov.setViewers(v?.viewers ?? 0); if (v?.status !== 'live') { status.hidden = false; status.textContent = 'انتهى البث'; w.timers.push(setTimeout(() => leave(true), 1800)); } else if (!v?.joined) { await sb.rpc('join_live', { p_id: w.id }); } } catch {} }, 8000));
+      return true;
+    } catch { try { w.lk?.disconnect(); } catch {} w.lk = null; return false; }
   }
 }
 

@@ -37,6 +37,13 @@ jobs:
           for d in branding/res/mipmap-*; do mkdir -p $R/$(basename $d); cp $d/*.png $R/$(basename $d)/; done
           sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">NEXORA</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">NEXORA</string>|' $R/values/strings.xml
           grep -n "app_name" $R/values/strings.xml
+      - name: LiveKit client SDK (for LIVE with many viewers)
+        continue-on-error: true
+        run: |
+          npm i --no-save livekit-client@2 esbuild
+          mkdir -p www/js/vendor
+          npx esbuild node_modules/livekit-client/dist/livekit-client.esm.mjs --bundle --format=esm --minify --outfile=www/js/vendor/livekit-client.esm.mjs
+          ls -la www/js/vendor
       - name: Native plugins (audio route, update opener)
         run: |
           D=android/app/src/main/java/com/m17/social
