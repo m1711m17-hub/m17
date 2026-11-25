@@ -34,7 +34,8 @@ export async function messagesPage(root) {
   const list = h('div', { class: 'card-list' });
   const newBtn = h('button', { class: 'icon-btn', 'aria-label': 'محادثة جديدة', onclick: newChat }, icon('edit', 22));
   const logBtn = h('button', { class: 'icon-btn', 'aria-label': 'سجل المكالمات', onclick: () => (location.hash = '#/calls') }, icon('phone', 22));
-  root.append(headerBar('الرسائل', { right: [logBtn, newBtn, bellButton()] }), h('div', { class: 'page' }, list));
+  const groupsBtn = h('button', { class: 'icon-btn', 'aria-label': 'المجموعات', onclick: () => (location.hash = '#/groups') }, icon('users', 22));
+  root.append(headerBar('الرسائل', { right: [groupsBtn, logBtn, newBtn, bellButton()] }), h('div', { class: 'page' }, list));
 
   function newChat() {
     sheet('محادثة جديدة', (body, close) => {

@@ -7,6 +7,7 @@ import { homePage } from './pages/home.js';
 import { explorePage } from './pages/explore.js';
 import { composePage } from './pages/compose.js';
 import { messagesPage, chatPage } from './pages/messages.js';
+import { groupsPage, groupChatPage } from './pages/groups.js';
 import { notificationsPage } from './pages/notifications.js';
 import { profilePage } from './pages/profile.js';
 import { settingsPage } from './pages/settings.js';
@@ -19,7 +20,7 @@ import { checkForUpdates } from './update.js';
 const root = document.getElementById('root');
 const ROUTES = [
   [/^\/home$/, 'home', homePage], [/^\/explore$/, 'explore', explorePage], [/^\/compose$/, 'compose', composePage],
-  [/^\/messages$/, 'messages', messagesPage], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
+  [/^\/messages$/, 'messages', messagesPage], [/^\/groups$/, 'messages', groupsPage], [/^\/group\/([0-9a-f-]{36})$/, 'messages', groupChatPage, ['id']], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
   [/^\/notifications$/, 'none', notificationsPage], [/^\/profile$/, 'profile', profilePage],
   [/^\/u\/([a-z0-9_]+)$/, 'profile', profilePage, ['username']], [/^\/settings$/, 'profile', settingsPage],
   [/^\/admin$/, 'profile', adminPage], [/^\/calls$/, 'messages', callsPage], [/^\/post\/([0-9a-f-]{36})$/, 'none', postPage, ['id']],
@@ -59,7 +60,7 @@ async function route() {
   view = h('main', { class: 'view enter' });
   root.querySelector('.shell').prepend(view);
   tabbar.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === match.tab));
-  document.body.classList.toggle('in-chat', /^\/chat\//.test(path));
+  document.body.classList.toggle('in-chat', /^\/(chat|group)\//.test(path));
   window.scrollTo(0, 0);
   try {
     const c = await match.fn(view, { ...match.params, ...q }, ctx);
@@ -75,7 +76,7 @@ async function route() {
 function restoreRoute() {
   try {
     const r = JSON.parse(localStorage.getItem('m17.route') || 'null');
-    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|u\/|post\/|messages|explore|profile|notifications|settings)/.test(r.h)) return r.h;
+    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|explore|profile|notifications|settings)/.test(r.h)) return r.h;
   } catch {}
   return null;
 }
@@ -139,7 +140,7 @@ CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
   const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
-  if (/^\/(chat\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
+  if (/^\/(chat\/|group\/|groups|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
   CapApp.minimizeApp?.();
 });
