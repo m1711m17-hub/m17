@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -48,3 +50,11 @@ jobs:
         with:
           name: M17-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish download link (GitHub Release)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk NEXORA.apk
+          gh release delete nexora-latest --cleanup-tag -y || true
+          gh release create nexora-latest NEXORA.apk --latest --title "NEXORA" --notes "أحدث إصدار من تطبيق NEXORA لأندرويد. حمّل ملف NEXORA.apk وثبّته (اسمح بالتثبيت من هذا المصدر عند الطلب)."
