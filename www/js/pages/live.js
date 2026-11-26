@@ -1,13 +1,15 @@
 // Live streaming: the host's phone sends one WebRTC stream to each viewer (peer-to-peer, signalling through Supabase `live_signals`).
 // Comments / hearts / gifts travel over an RTCDataChannel (host <-> viewers), so no extra backend is needed.
 // The host can stream the camera OR a still image picked from the gallery (cropped/edited, sent as a canvas video track + microphone).
-// Limit: 6 simultaneous viewers per broadcast (no media server). Viewers = people who follow the host.
+// Target capacity: 100 viewers when the LiveKit SFU and backend admission limit are configured. P2P fallback remains capped at 6 to protect the host phone.
 import { h, icon, avatar, toast, confirmBox, clear, sheet } from '../lib/dom.js';
 import { sb, state, bus, rt, rtLive, beaconRpc, PROFILE_MINI } from '../api.js';
 import { ICE_SERVERS, refreshIce } from '../config.js';
 import { loadLK, lkToken, enc, dec } from '../lib/livekit.js';
 
-export const MAX_VIEWERS = 6;
+export const MAX_VIEWERS = 100;
+// Direct peer-to-peer streaming is intentionally limited; scaling beyond this requires LiveKit SFU.
+export const P2P_MAX_VIEWERS = 6;
 let hostSession = null, watchSession = null;
 const seen = new Set();
 const fmt = (s) => { const m = Math.floor(s / 60), x = s % 60, hh = Math.floor(m / 60); return (hh ? hh + ':' + String(m % 60).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0'); };
@@ -410,7 +412,7 @@ function openLiveInner() {
     } catch { /* bad signal */ }
   }
   async function addViewer(uid) {
-    dropViewer(uid); if (s.peers.size >= MAX_VIEWERS) return; // P2P capacity; more viewers use the media server
+    dropViewer(uid); if (s.peers.size >= P2P_MAX_VIEWERS) return; // Never fan out 100 direct streams from the host phone.
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle' });
     const p = { pc, remoteSet: false, ice: [], dc: null }; s.peers.set(uid, p);
     const dc = p.dc = pc.createDataChannel('chat');
