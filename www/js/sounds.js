@@ -3,11 +3,11 @@ const PREFIX = 'nexora.sound.';
 const MAX_BYTES = 1500 * 1024;
 const TYPES = { message: 'نغمة الرسائل', call: 'نغمة المكالمات' };
 export const SOUND_PRESETS = [
-  { id: 'soft', name: 'نسمة', notes: [784, 988], durations: [0.12, 0.18] },
-  { id: 'crystal', name: 'كريستال', notes: [1047, 1319, 1568], durations: [0.10, 0.10, 0.22] },
-  { id: 'pulse', name: 'نبض', notes: [659, 659, 880], durations: [0.10, 0.10, 0.20] },
-  { id: 'classic', name: 'كلاسيك', notes: [880, 698, 880], durations: [0.18, 0.18, 0.25] },
-  { id: 'calm', name: 'هدوء', notes: [523, 659, 784], durations: [0.16, 0.16, 0.30] }
+  { id: 'soft', name: 'نسمة', notes: [659, 784, 988, 784, 659, 784, 988, 1175], durations: [0.38, 0.38, 0.52, 0.38, 0.38, 0.38, 0.52, 0.72] },
+  { id: 'crystal', name: 'كريستال', notes: [784, 988, 1175, 1319, 1175, 988, 1175, 1568], durations: [0.32, 0.32, 0.42, 0.62, 0.32, 0.32, 0.42, 0.82] },
+  { id: 'pulse', name: 'نبض', notes: [523, 659, 784, 659, 523, 659, 880, 784], durations: [0.42, 0.42, 0.58, 0.42, 0.42, 0.42, 0.58, 0.72] },
+  { id: 'classic', name: 'كلاسيك', notes: [880, 784, 698, 784, 880, 988, 880, 784], durations: [0.48, 0.38, 0.38, 0.48, 0.48, 0.58, 0.48, 0.82] },
+  { id: 'calm', name: 'هدوء', notes: [523, 587, 659, 784, 659, 587, 523, 659], durations: [0.48, 0.42, 0.48, 0.72, 0.48, 0.42, 0.58, 0.82] }
 ];
 function read(key) { try { return localStorage.getItem(PREFIX + key) || ''; } catch { return ''; } }
 function selected(key) { try { return localStorage.getItem(PREFIX + key + '.preset') || ''; } catch { return ''; } }
@@ -54,7 +54,7 @@ function runPreset(key, loop) {
       gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
       osc.connect(gain); gain.connect(ac.destination); osc.start(at); osc.stop(at + dur + 0.02); at += dur + 0.055;
     });
-    if (loop) timer = setTimeout(play, Math.max(1100, (at - ac.currentTime) * 1000 + 500));
+    if (loop) timer = setTimeout(play, Math.max(250, (at - ac.currentTime) * 1000 + 250));
     else timer = setTimeout(() => { try { ac.close(); } catch {} }, Math.max(500, (at - ac.currentTime) * 1000 + 100));
   };
   try { ac.resume?.(); play(); } catch { try { ac.close(); } catch {} return null; }
