@@ -2,19 +2,28 @@
 const PREFIX = 'nexora.sound.';
 const MAX_BYTES = 1500 * 1024;
 const TYPES = { message: 'نغمة الرسائل', call: 'نغمة المكالمات' };
-export const SOUND_PRESETS = [
+const MESSAGE_SOUND_PRESETS = [
+  { id: 'soft', name: 'نسمة', notes: [659, 784, 988, 784, 659, 784, 988, 1175], durations: [0.38, 0.38, 0.52, 0.38, 0.38, 0.38, 0.52, 0.72] },
+  { id: 'crystal', name: 'كريستال', notes: [784, 988, 1175, 1319, 1175, 988, 1175, 1568], durations: [0.32, 0.32, 0.42, 0.62, 0.32, 0.32, 0.42, 0.82] },
+  { id: 'pulse', name: 'نبض', notes: [523, 659, 784, 659, 523, 659, 880, 784], durations: [0.42, 0.42, 0.58, 0.42, 0.42, 0.42, 0.58, 0.72] },
+  { id: 'classic', name: 'كلاسيك', notes: [880, 784, 698, 784, 880, 988, 880, 784], durations: [0.48, 0.38, 0.38, 0.48, 0.48, 0.58, 0.48, 0.82] },
+  { id: 'calm', name: 'هدوء', notes: [523, 587, 659, 784, 659, 587, 523, 659], durations: [0.48, 0.42, 0.48, 0.72, 0.48, 0.42, 0.58, 0.82] }
+];
+const CALL_SOUND_PRESETS = [
   { id: 'moonlight', name: 'ضوء القمر', waveform: 'triangle', notes: [523, 659, 784, 1047, 988, 784, 659, 587, 659, 784], durations: [0.42, 0.42, 0.55, 0.72, 0.42, 0.42, 0.55, 0.42, 0.55, 0.85] },
   { id: 'cinema', name: 'سينمائي', waveform: 'sine', notes: [392, 523, 659, 784, 698, 659, 523, 587, 784, 880], durations: [0.55, 0.45, 0.55, 0.8, 0.55, 0.45, 0.65, 0.5, 0.65, 1.0] },
   { id: 'piano', name: 'بيانو ناعم', waveform: 'triangle', notes: [659, 784, 880, 784, 659, 587, 659, 784, 988, 880], durations: [0.3, 0.35, 0.55, 0.35, 0.45, 0.4, 0.35, 0.5, 0.65, 0.9] },
   { id: 'arabesque', name: 'شرقي', waveform: 'sine', notes: [440, 494, 587, 659, 587, 523, 494, 440, 523, 587], durations: [0.42, 0.32, 0.52, 0.65, 0.38, 0.42, 0.32, 0.58, 0.42, 0.9] },
   { id: 'sunrise', name: 'شروق', waveform: 'triangle', notes: [587, 659, 784, 880, 1047, 880, 784, 659, 784, 988], durations: [0.4, 0.4, 0.48, 0.55, 0.8, 0.45, 0.45, 0.55, 0.5, 0.95] }
 ];
+export const SOUND_PRESETS = MESSAGE_SOUND_PRESETS;
+export function getSoundPresets(key) { return key === 'call' ? CALL_SOUND_PRESETS : MESSAGE_SOUND_PRESETS; }
 function read(key) { try { return localStorage.getItem(PREFIX + key) || ''; } catch { return ''; } }
 function selected(key) { try { return localStorage.getItem(PREFIX + key + '.preset') || ''; } catch { return ''; } }
 export function selectedSoundPreset(key) { return selected(key); }
 export function hasCustomSound(key) { return !!read(key); }
 export function setSoundPreset(key, id) {
-  if (!TYPES[key] || !SOUND_PRESETS.some((p) => p.id === id)) throw new Error('النغمة المحددة غير متاحة');
+  if (!TYPES[key] || !getSoundPresets(key).some((p) => p.id === id)) throw new Error('النغمة المحددة غير متاحة');
   try { localStorage.removeItem(PREFIX + key); localStorage.removeItem(PREFIX + key + '.name'); localStorage.setItem(PREFIX + key + '.preset', id); }
   catch { throw new Error('تعذر حفظ اختيار النغمة على هذا الجهاز'); }
 }
@@ -33,7 +42,7 @@ export function setSoundFromFile(key, file) {
   });
 }
 export function soundName(key) {
-  try { const name = localStorage.getItem(PREFIX + key + '.name'); if (name) return name; const p = SOUND_PRESETS.find((x) => x.id === selected(key)); return p ? p.name : (read(key) ? 'نغمة مخصصة' : 'النغمة الأصلية'); }
+  try { const name = localStorage.getItem(PREFIX + key + '.name'); if (name) return name; const p = getSoundPresets(key).find((x) => x.id === selected(key)); return p ? p.name : (read(key) ? 'نغمة مخصصة' : 'النغمة الأصلية'); }
   catch { return 'النغمة الأصلية'; }
 }
 export function resetSound(key) {
@@ -41,7 +50,7 @@ export function resetSound(key) {
 }
 function makeAudio(key) { const src = read(key); if (!src) return null; try { const a = new Audio(src); a.preload = 'auto'; return a; } catch { return null; } }
 function runPreset(key, loop) {
-  const preset = SOUND_PRESETS.find((p) => p.id === selected(key)); if (!preset) return null;
+  const preset = getSoundPresets(key).find((p) => p.id === selected(key)); if (!preset) return null;
   let ac; try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
   let stopped = false, timer = null;
   const play = () => {
