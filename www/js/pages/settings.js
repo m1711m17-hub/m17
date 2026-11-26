@@ -6,7 +6,7 @@ import { VIS_LABEL } from './stories.js';
 import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
 import { checkForUpdates, updateState, getWhatsappUrl, openExternal, updateCard } from '../update.js';
-import { setSoundFromFile, soundName, resetSound, previewSound } from '../sounds.js';
+import { setSoundFromFile, soundName, resetSound, previewSound, setSoundPreset, SOUND_PRESETS } from '../sounds.js';
 
 export async function settingsPage(root, params, ctx) {
   const box = h('div', { class: 'page' });
@@ -88,7 +88,7 @@ export async function settingsPage(root, params, ctx) {
 
   function soundSettingsSheet() {
     sheet('نغمات التطبيق', (body) => {
-      body.append(h('p', { class: 'muted small' }, 'اختر نغمة مستقلة للرسائل والمكالمات. الملفات المختارة تُحفظ على هذا الجهاز فقط.'));
+      body.append(h('p', { class: 'muted small' }, 'اختر نغمة جاهزة أو حمّل صوتاً من ملفات هاتفك. لكل من الرسائل والمكالمات نغمة مستقلة، ويتم حفظ اختيارك على هذا الجهاز.'));
       const makeSoundRow = (key, title, desc) => {
         const status = h('div', { class: 'muted small' }, soundName(key));
         const file = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.3gp', style: { display: 'none' }, onchange: async () => {
@@ -100,9 +100,16 @@ export async function settingsPage(root, params, ctx) {
         const choose = h('button', { class: 'btn primary sm', onclick: () => file.click() }, 'اختيار من الملفات');
         const preview = h('button', { class: 'btn ghost sm', onclick: () => { if (!previewSound(key)) toast('اختر نغمة أولاً', 'err'); } }, 'معاينة');
         const reset = h('button', { class: 'btn ghost sm', onclick: () => { resetSound(key); status.textContent = 'النغمة الأصلية'; toast('تمت استعادة النغمة الأصلية', 'ok'); } }, 'استعادة الأصلية');
+        const presets = h('div', { class: 'row wrap gap', style: { margin: '8px 0 10px' } },
+          ...SOUND_PRESETS.map((p) => h('button', { class: 'chip', type: 'button', onclick: () => {
+            try { setSoundPreset(key, p.id); status.textContent = p.name; previewSound(key); toast('تم اختيار نغمة ' + p.name, 'ok'); }
+            catch (e) { toast(e.message, 'err'); }
+          } }, p.name)));
         return h('div', { class: 'menu-item', style: { display: 'block', padding: '14px 12px' } },
           h('div', { class: 'row between' }, h('b', null, title), status),
           h('div', { class: 'muted small', style: { margin: '5px 0 10px' } }, desc),
+          h('div', { class: 'muted small' }, 'نغمات جاهزة'),
+          presets,
           h('div', { class: 'row wrap gap' }, choose, preview, reset), file);
       };
       body.append(makeSoundRow('message', 'نغمة الرسائل', 'تعمل عند وصول رسالة جديدة والتطبيق مفتوح.'),
