@@ -93,6 +93,12 @@ export async function settingsPage(root, params, ctx) {
       const status = h('p', { class: 'muted small' }, 'اختر نغمة من القائمة، واضغط زر التشغيل لسماعها.');
       const paint = () => {
         clear(list);
+        const defaultActive = !chosen && !hasCustomSound(key);
+        list.append(h('div', { class: 'set-row', style: { cursor: 'pointer' }, onclick: () => {
+          resetSound(key); chosen = ''; toast('تم اعتماد النغمة الأصلية', 'ok'); close();
+        } },
+          h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: defaultActive ? 'var(--accent)' : 'var(--muted)' } }, icon(defaultActive ? 'check-circle' : 'circle', 21)),
+          h('div', { class: 'grow' }, h('b', null, 'النغمة الافتراضية'), h('div', { class: 'muted small' }, 'صوت التطبيق الأصلي'))));
         SOUND_PRESETS.forEach((preset) => {
           const active = chosen === preset.id;
           const radio = h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: active ? 'var(--accent)' : 'var(--muted)' } }, icon(active ? 'check-circle' : 'circle', 21));
