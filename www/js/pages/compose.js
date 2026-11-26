@@ -93,7 +93,7 @@ export function composePage(root, params) {
     bar.firstChild.style.width = '30%';
     try {
       if (mode === 'post') {
-        const media = file ? await uploadMedia('posts', file) : null;
+        const media = file ? await uploadMedia('posts', file, { onProgress: (f) => { bar.firstChild.style.width = (30 + Math.round(f * 50)) + '%'; publish.dataset.pct = Math.round(f * 100); } }) : null;
         bar.firstChild.style.width = '80%';
         await sb.from('posts').insert({ author_id: state.me.id, body, media_url: media?.url || null, media_type: media?.type || null });
       } else {

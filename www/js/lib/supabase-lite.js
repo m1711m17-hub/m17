@@ -82,9 +82,12 @@ export function createClient(url, key, loginDomain) {
     await fresh();
     const h = headers(raw ? {} : { 'Content-Type': 'application/json' });
     if (prefer) h.Prefer = prefer;
-    const r = await fetch(url + path + (query ? '?' + query : ''), {
-      method, headers: h, body: raw ? body : body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    let r;
+    try {
+      r = await fetch(url + path + (query ? '?' + query : ''), {
+        method, headers: h, body: raw ? body : body !== undefined ? JSON.stringify(body) : undefined,
+      });
+    } catch (e) { throw new ApiError(arabicError(e && e.message), 0, e); }
     const data = await parse(r);
     if (!r.ok) throw fail(r, data);
     return { data, headers: r.headers };
@@ -178,9 +181,31 @@ export function createClient(url, key, loginDomain) {
     },
     storage: {
       publicUrl: (bucket, path) => `${url}/storage/v1/object/public/${bucket}/${path}`,
-      async upload(bucket, path, file) {
-        await http('POST', `/storage/v1/object/${bucket}/${path}`, { body: file, raw: true, prefer: undefined, query: '' }
-        ).catch((e) => { throw e; });
+      // XHR upload: progress callback + automatic retry on network drops (slow/unstable mobile links).
+      async upload(bucket, path, file, { onProgress, retries = 2 } = {}) {
+        await fresh();
+        const target = `${url}/storage/v1/object/${bucket}/${path}`;
+        const once = () => new Promise((resolve, reject) => {
+          const x = new XMLHttpRequest();
+          x.open('POST', target);
+          const hd = headers(); Object.keys(hd).forEach((k) => x.setRequestHeader(k, hd[k]));
+          if (file.type) x.setRequestHeader('Content-Type', file.type);
+          x.timeout = 15 * 60 * 1000;
+          if (x.upload && onProgress) x.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+          x.onload = () => {
+            if (x.status >= 200 && x.status < 300) return resolve();
+            let d = null; try { d = JSON.parse(x.responseText); } catch {}
+            const msg = (d && (d.message || d.error)) || x.statusText;
+            reject(new ApiError(arabicError(msg), x.status, d));
+          };
+          const net = () => reject(new ApiError('انقطع الاتصال أثناء رفع الملف. تأكد من الإنترنت ثم أعد المحاولة', 0));
+          x.onerror = net; x.ontimeout = net; x.onabort = net;
+          x.send(file);
+        });
+        for (let i = 0; ; i++) {
+          try { await once(); break; }
+          catch (e) { if (e.status !== 0 || i >= retries) throw e; await new Promise((r) => setTimeout(r, 1500 * (i + 1))); onProgress && onProgress(0); }
+        }
         return `${url}/storage/v1/object/public/${bucket}/${path}`;
       },
       async remove(bucket, path) { await http('DELETE', `/storage/v1/object/${bucket}/${path}`); },

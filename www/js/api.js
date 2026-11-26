@@ -57,7 +57,7 @@ async function compressImage(file, max = 1600) {
     return blob && blob.size < file.size ? blob : file;
   } catch { return file; }
 }
-export async function uploadMedia(bucket, file) {
+export async function uploadMedia(bucket, file, opts = {}) {
   const isVideo = file.type.startsWith('video/');
   const isImage = file.type.startsWith('image/');
   if (!isVideo && !isImage) throw new Error('نوع الملف غير مدعوم');
@@ -67,7 +67,7 @@ export async function uploadMedia(bucket, file) {
   const body = isImage ? await compressImage(file) : file;
   const ext = body.type === 'image/jpeg' ? 'jpg' : (body.type.split('/')[1] || 'bin').replace('quicktime', 'mov');
   const path = `${state.me.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const url = await sb.storage.upload(bucket, path, body);
+  const url = await sb.storage.upload(bucket, path, body, opts);
   return { url, type: isVideo ? 'video' : 'image' };
 }
 
