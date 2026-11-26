@@ -11,6 +11,7 @@ export const SOUND_PRESETS = [
 ];
 function read(key) { try { return localStorage.getItem(PREFIX + key) || ''; } catch { return ''; } }
 function selected(key) { try { return localStorage.getItem(PREFIX + key + '.preset') || ''; } catch { return ''; } }
+export function selectedSoundPreset(key) { return selected(key); }
 export function hasCustomSound(key) { return !!read(key); }
 export function setSoundPreset(key, id) {
   if (!TYPES[key] || !SOUND_PRESETS.some((p) => p.id === id)) throw new Error('النغمة المحددة غير متاحة');
