@@ -6,7 +6,7 @@ import { VIS_LABEL } from './stories.js';
 import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
 import { checkForUpdates, updateState, getWhatsappUrl, openExternal, updateCard } from '../update.js';
-import { setSoundFromFile, soundName, resetSound, previewSound, setSoundPreset, SOUND_PRESETS } from '../sounds.js';
+import { setSoundFromFile, soundName, resetSound, previewSound, setSoundPreset, SOUND_PRESETS, selectedSoundPreset, hasCustomSound } from '../sounds.js';
 
 export async function settingsPage(root, params, ctx) {
   const box = h('div', { class: 'page' });
@@ -86,35 +86,52 @@ export async function settingsPage(root, params, ctx) {
   // offer owner activation only while no owner exists
   try { if (state.me.role !== 'OWNER' && !(await sb.rpc('owner_exists'))) box.append(h('div', { class: 'card-list' }, row('shield', 'تفعيل حساب المالك', 'لديك رمز المالك؟', null, claimSheet))); } catch {}
 
+  function soundPicker(key, title) {
+    sheet(title, (body, close) => {
+      let chosen = selectedSoundPreset(key);
+      const list = h('div', { class: 'card-list' });
+      const status = h('p', { class: 'muted small' }, 'اختر نغمة من القائمة، واضغط زر التشغيل لسماعها.');
+      const paint = () => {
+        clear(list);
+        SOUND_PRESETS.forEach((preset) => {
+          const active = chosen === preset.id;
+          const radio = h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: active ? 'var(--accent)' : 'var(--muted)' } }, icon(active ? 'check-circle' : 'circle', 21));
+          const play = h('button', { class: 'btn ghost sm', onclick: (e) => { e.stopPropagation(); setSoundPreset(key, preset.id); chosen = preset.id; previewSound(key); paint(); } }, '▶');
+          const item = h('div', { class: 'set-row', style: { cursor: 'pointer' }, onclick: () => { try { setSoundPreset(key, preset.id); chosen = preset.id; previewSound(key); paint(); } catch (e) { toast(e.message, 'err'); } } },
+            radio, h('div', { class: 'grow' }, h('b', null, preset.name), h('div', { class: 'muted small' }, 'نغمة NEXORA')), play);
+          list.append(item);
+        });
+      };
+      paint();
+      const file = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.3gp', style: { display: 'none' }, onchange: async () => {
+        const picked = file.files?.[0]; if (!picked) return;
+        try { const name = await setSoundFromFile(key, picked); chosen = ''; toast('تم اعتماد ' + name, 'ok'); close(); }
+        catch (e) { toast(e.message || 'تعذر حفظ النغمة', 'err'); }
+        file.value = '';
+      } });
+      body.append(status, list,
+        h('button', { class: 'menu-item', style: { width: '100%', marginTop: '12px' }, onclick: () => file.click() },
+          h('div', { class: 'row between' }, h('div', null, h('b', null, 'اختيار من الملفات'), h('div', { class: 'muted small' }, hasCustomSound(key) ? soundName(key) : 'MP3 وM4A وWAV وغيرها')), icon('folder-open', 20))),
+        file,
+        h('button', { class: 'btn primary', style: { width: '100%', marginTop: '14px' }, onclick: close }, 'اعتماد النغمة'));
+    }, { full: true });
+  }
+
   function soundSettingsSheet() {
     sheet('نغمات التطبيق', (body) => {
-      body.append(h('p', { class: 'muted small' }, 'اختر نغمة جاهزة أو حمّل صوتاً من ملفات هاتفك. لكل من الرسائل والمكالمات نغمة مستقلة، ويتم حفظ اختيارك على هذا الجهاز.'));
-      const makeSoundRow = (key, title, desc) => {
-        const status = h('div', { class: 'muted small' }, soundName(key));
-        const file = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.3gp', style: { display: 'none' }, onchange: async () => {
-          const selected = file.files?.[0]; if (!selected) return;
-          try { const name = await setSoundFromFile(key, selected); status.textContent = name; toast('تم حفظ النغمة على هذا الجهاز', 'ok'); }
-          catch (e) { toast(e.message || 'تعذر حفظ النغمة', 'err'); }
-          file.value = '';
-        } });
-        const choose = h('button', { class: 'btn primary sm', onclick: () => file.click() }, 'اختيار من الملفات');
-        const preview = h('button', { class: 'btn ghost sm', onclick: () => { if (!previewSound(key)) toast('اختر نغمة أولاً', 'err'); } }, 'معاينة');
-        const reset = h('button', { class: 'btn ghost sm', onclick: () => { resetSound(key); status.textContent = 'النغمة الأصلية'; toast('تمت استعادة النغمة الأصلية', 'ok'); } }, 'استعادة الأصلية');
-        const presets = h('div', { class: 'row wrap gap', style: { margin: '8px 0 10px' } },
-          ...SOUND_PRESETS.map((p) => h('button', { class: 'chip', type: 'button', onclick: () => {
-            try { setSoundPreset(key, p.id); status.textContent = p.name; previewSound(key); toast('تم اختيار نغمة ' + p.name, 'ok'); }
-            catch (e) { toast(e.message, 'err'); }
-          } }, p.name)));
-        return h('div', { class: 'menu-item', style: { display: 'block', padding: '14px 12px' } },
-          h('div', { class: 'row between' }, h('b', null, title), status),
-          h('div', { class: 'muted small', style: { margin: '5px 0 10px' } }, desc),
-          h('div', { class: 'muted small' }, 'نغمات جاهزة'),
-          presets,
-          h('div', { class: 'row wrap gap' }, choose, preview, reset), file);
-      };
-      body.append(makeSoundRow('message', 'نغمة الرسائل', 'تعمل عند وصول رسالة جديدة والتطبيق مفتوح.'),
-        makeSoundRow('call', 'نغمة المكالمات', 'تعمل عند ورود مكالمة والتطبيق مفتوح.'));
-      body.append(h('p', { class: 'muted small' }, 'ملاحظة: نغمات إشعارات النظام التي تصل والتطبيق مغلق تعتمد حالياً على إعدادات إشعارات Android.'));
+      body.append(h('p', { class: 'muted small' }, 'خصص نغمة مستقلة للرسائل والمكالمات، واختر من نغمات NEXORA أو من ملفات هاتفك.'));
+      body.append(
+        h('div', { class: 'card-list' },
+          h('div', { class: 'set-row', onclick: () => soundPicker('message', 'نغمة الرسائل') },
+            h('div', { class: 'set-ico' }, icon('message-circle', 20)),
+            h('div', { class: 'grow' }, h('b', null, 'نغمة الرسائل'), h('div', { class: 'muted small' }, soundName('message'))),
+            icon('chevron-left', 18)),
+          h('div', { class: 'set-row', onclick: () => soundPicker('call', 'نغمة المكالمات') },
+            h('div', { class: 'set-ico' }, icon('phone', 20)),
+            h('div', { class: 'grow' }, h('b', null, 'نغمة المكالمات'), h('div', { class: 'muted small' }, soundName('call'))),
+            icon('chevron-left', 18))
+        ),
+        h('p', { class: 'muted small' }, 'يتم حفظ النغمات المختارة على هذا الجهاز. إشعارات النظام عند إغلاق التطبيق تحتاج ضبط قناة إشعارات Android بشكل منفصل.'));
     }, { full: true });
   }
 
