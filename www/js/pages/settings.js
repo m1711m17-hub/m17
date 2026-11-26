@@ -6,7 +6,7 @@ import { VIS_LABEL } from './stories.js';
 import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
 import { checkForUpdates, updateState, getWhatsappUrl, openExternal, updateCard } from '../update.js';
-import { setSoundFromFile, soundName, resetSound, previewSound, setSoundPreset, SOUND_PRESETS, selectedSoundPreset, hasCustomSound } from '../sounds.js';
+import { setSoundFromFile, soundName, resetSound, previewSound, setSoundPreset, getSoundPresets, selectedSoundPreset, hasCustomSound } from '../sounds.js';
 
 export async function settingsPage(root, params, ctx) {
   const box = h('div', { class: 'page' });
@@ -99,7 +99,7 @@ export async function settingsPage(root, params, ctx) {
         } },
           h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: defaultActive ? 'var(--accent)' : 'var(--muted)' } }, icon(defaultActive ? 'check-circle' : 'circle', 21)),
           h('div', { class: 'grow' }, h('b', null, 'النغمة الافتراضية'), h('div', { class: 'muted small' }, 'صوت التطبيق الأصلي'))));
-        SOUND_PRESETS.forEach((preset) => {
+        getSoundPresets(key).forEach((preset) => {
           const active = chosen === preset.id;
           const radio = h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: active ? 'var(--accent)' : 'var(--muted)' } }, icon(active ? 'check-circle' : 'circle', 21));
           const play = h('button', { class: 'btn ghost sm', onclick: (e) => { e.stopPropagation(); setSoundPreset(key, preset.id); chosen = preset.id; previewSound(key); paint(); } }, '▶');
