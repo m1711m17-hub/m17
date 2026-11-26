@@ -109,14 +109,22 @@ export async function settingsPage(root, params, ctx) {
         });
       };
       paint();
-      const file = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.3gp', style: { display: 'none' }, onchange: async () => {
-        const picked = file.files?.[0]; if (!picked) return;
-        try { const name = await setSoundFromFile(key, picked); chosen = ''; toast('تم اعتماد ' + name, 'ok'); close(); }
-        catch (e) { toast(e.message || 'تعذر حفظ النغمة', 'err'); }
-        file.value = '';
+      let file;
+      file = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.3gp', style: { display: 'none' }, onchange: async () => {
+        const picked = file?.files?.[0]; if (!picked) return;
+        try {
+          const name = await setSoundFromFile(key, picked);
+          chosen = '';
+          toast('تم اعتماد ' + name, 'ok');
+          close();
+        } catch (e) {
+          toast(e?.message || 'تعذر حفظ النغمة', 'err');
+        } finally {
+          if (file) file.value = '';
+        }
       } });
       body.append(status, list,
-        h('button', { class: 'menu-item', style: { width: '100%', marginTop: '12px' }, onclick: () => file.click() },
+        h('button', { class: 'menu-item', style: { width: '100%', marginTop: '12px' }, onclick: () => { try { file.click(); } catch (e) { toast(e?.message || 'تعذر فتح ملفات الهاتف', 'err'); } } },
           h('div', { class: 'row between' }, h('div', null, h('b', null, 'اختيار من الملفات'), h('div', { class: 'muted small' }, hasCustomSound(key) ? soundName(key) : 'MP3 وM4A وWAV وغيرها')), icon('folder-open', 20))),
         file,
         h('button', { class: 'btn primary', style: { width: '100%', marginTop: '14px' }, onclick: close }, 'اعتماد النغمة'));
