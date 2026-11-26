@@ -318,9 +318,11 @@ function openLiveInner() {
   // ---- guests (invited people who talk with you): their mic is mixed into the broadcast audio ----
   // ---- SFU (LiveKit): the host publishes once; unlimited viewers subscribe. Falls back to P2P when unavailable. ----
   async function lkHostStart() {
-    const LK = await loadLK(); if (!LK) return;
+    const LK = await loadLK();
+    if (!LK) { toast('ميزة البث الموسّع غير جاهزة؛ البث الحالي محدود بـ6 مشاهدين.', 'err'); return; }
     try {
-      const t = await lkToken(s.id, 'host'); if (!t?.ok || s.ended) return;
+      const t = await lkToken(s.id, 'host');
+      if (!t?.ok || s.ended) { if (!s.ended) toast('تعذّر تفعيل البث الموسّع؛ البث الحالي محدود بـ6 مشاهدين.', 'err'); return; }
       const room = new LK.Room({ dynacast: true });
       room.on(LK.RoomEvent.DataReceived, (payload, part) => { try { chatFrom(part?.identity, JSON.parse(dec(payload))); } catch {} });
       await room.connect(t.url, t.token);
@@ -330,7 +332,7 @@ function openLiveInner() {
       if (v) await room.localParticipant.publishTrack(v, { source: LK.Track.Source.Camera, videoEncoding: { maxBitrate: 1500000, maxFramerate: 30 } });
       if (a) await room.localParticipant.publishTrack(a, { source: LK.Track.Source.Microphone });
       await sb.rpc('set_live_lk', { p_id: s.id, p_on: true });
-    } catch { try { s.lk?.room.disconnect(); } catch {} s.lk = null; }
+    } catch { try { s.lk?.room.disconnect(); } catch {} s.lk = null; if (!s.ended) toast('تعذّر اتصال LiveKit؛ البث الحالي محدود بـ6 مشاهدين.', 'err'); }
   }
   function lkSwap(kind, track) {
     try { const pub = [...s.lk.room.localParticipant.trackPublications.values()].find((x) => x.kind === kind); pub?.track?.replaceTrack(track); } catch {}
@@ -532,9 +534,9 @@ export async function openWatch(live, host, opts = {}) {
     w.mic?.getTracks().forEach((t) => t.stop()); try { w.pc?.close(); } catch {} try { w.lk?.disconnect(); } catch {} el.remove(); if (watchSession === w) watchSession = null;
   }
   async function lkWatch() {
-    const LK = await loadLK(); if (!LK) return false;
+    const LK = await loadLK(); if (!LK) { toast('الاتصال الموسّع غير متاح؛ جارٍ تجربة الاتصال العادي.', 'err'); return false; }
     try {
-      const t = await lkToken(w.id, 'viewer'); if (!t?.ok || w.ended) return false;
+      const t = await lkToken(w.id, 'viewer'); if (!t?.ok || w.ended) { if (!w.ended) toast('تعذّر الاتصال الموسّع؛ جارٍ تجربة الاتصال العادي.', 'err'); return false; }
       const room = new LK.Room({ adaptiveStream: true, dynacast: true }); const remote = new MediaStream();
       room.on(LK.RoomEvent.TrackSubscribed, (track) => { if (!track.mediaStreamTrack) return; remote.addTrack(track.mediaStreamTrack); if (video.srcObject !== remote) video.srcObject = remote; video.play?.().catch(() => { tap.hidden = false; }); });
       room.on(LK.RoomEvent.TrackUnsubscribed, (track) => { try { remote.removeTrack(track.mediaStreamTrack); } catch {} });
@@ -547,7 +549,7 @@ export async function openWatch(live, host, opts = {}) {
       w.lk = room;
       w.timers.push(setInterval(async () => { try { const v = await sb.rpc('view_ping', { p_id: w.id }); ov.setViewers(v?.viewers ?? 0); if (v?.status !== 'live') { status.hidden = false; status.textContent = 'انتهى البث'; w.timers.push(setTimeout(() => leave(true), 1800)); } else if (!v?.joined) { await sb.rpc('join_live', { p_id: w.id }); } } catch {} }, 8000));
       return true;
-    } catch { try { w.lk?.disconnect(); } catch {} w.lk = null; return false; }
+    } catch { try { w.lk?.disconnect(); } catch {} w.lk = null; if (!w.ended) toast('فشل اتصال LiveKit؛ جارٍ تجربة الاتصال العادي.', 'err'); return false; }
   }
 }
 
