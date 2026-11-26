@@ -614,3 +614,23 @@ body.in-chat .tabbar{display:none}
 @keyframes bflash{0%,60%{box-shadow:0 0 0 3px rgba(34,211,238,.7)}100%{box-shadow:none}}
 .group-chat-root .rec-bar.grp{display:flex;align-items:center;gap:10px;flex:1}
 .group-chat-root .group-title{color:inherit;text-decoration:none}
+
+/* ===== Reels (Explore) ===== */
+.explore-tabs{margin-bottom:10px}
+.reels-host[hidden]{display:none}
+.reels{display:flex;flex-direction:column;overflow-y:auto;scroll-snap-type:y mandatory;border-radius:18px;background:#000;scrollbar-width:none;overscroll-behavior:contain}
+.reels::-webkit-scrollbar{display:none}
+.reel{position:relative;flex:0 0 100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;background:#000;overflow:hidden}
+.reel-video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.reel.bad::after{content:"تعذّر تشغيل الفيديو";position:absolute;inset:0;display:grid;place-items:center;color:#fff9}
+.reel-side{position:absolute;left:10px;bottom:90px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.reel-act{background:none;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.78rem;text-shadow:0 1px 6px #000a;filter:drop-shadow(0 1px 4px #000a)}
+.reel-act.on{color:#ff4d6d}
+.reel-act.on svg{fill:#ff4d6d}
+.reel-info{position:absolute;right:0;left:70px;bottom:0;padding:14px 14px 16px;background:linear-gradient(transparent,#000c);color:#fff}
+.reel-user{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.reel-cap{margin-top:8px;font-size:.92rem;line-height:1.6;max-height:4.8em;overflow:hidden}
+.reel-mute{position:absolute;top:10px;left:10px;width:38px;height:38px;border-radius:50%;border:0;background:#0007;color:#fff;display:grid;place-items:center}
+.reel-pause{position:absolute;inset:0;display:grid;place-items:center;color:#fffd;pointer-events:none}
+.reel-pause[hidden]{display:none}
+.reels-empty{margin:auto;color:#fff}

@@ -3,6 +3,7 @@ import { sb, state, enrichPosts, POST_SELECT, PROFILE_MINI } from '../api.js';
 import { postCard } from './postcard.js';
 import { headerBar, bellButton } from './home.js';
 import { followButton } from './profile.js';
+import { reelsView } from './reels.js';
 
 export function userRow(p, extra) {
   return h('a', { class: 'user-row', href: `#/u/${p.username}` }, avatar(p, 46),
@@ -12,8 +13,24 @@ export function userRow(p, extra) {
 export async function explorePage(root) {
   const input = h('input', { class: 'input search', placeholder: 'ابحث عن مستخدمين أو منشورات...', type: 'search' });
   const results = h('div'), discover = h('div');
+  const reelsHost = h('div', { class: 'reels-host', hidden: true });
+  const wrap = h('div', { class: 'search-wrap' }, icon('search', 20), input);
+  let tab = 'posts', stopReels = null;
+  const tabs = h('div', { class: 'chips explore-tabs' });
+  function paintTabs() {
+    clear(tabs).append(...[['posts', 'المنشورات', 'image'], ['reels', 'ريلز', 'video']].map(([k, l, ic]) => h('button', { class: 'chip' + (tab === k ? ' on' : ''), type: 'button', onclick: () => setTab(k) }, icon(ic, 16), l)));
+  }
+  function setTab(k) {
+    tab = k; paintTabs();
+    const r = k === 'reels';
+    wrap.hidden = r; results.hidden = r; discover.hidden = r; reelsHost.hidden = !r;
+    document.body.classList.toggle('reels-on', r);
+    if (r && !stopReels) stopReels = reelsView(reelsHost);
+    if (!r && stopReels) { stopReels(); stopReels = null; }
+  }
   root.append(headerBar('استكشاف', { right: [bellButton()] }),
-    h('div', { class: 'page' }, h('div', { class: 'search-wrap' }, icon('search', 20), input), results, discover));
+    h('div', { class: 'page' }, tabs, wrap, results, discover, reelsHost));
+  paintTabs();
 
   async function loadDiscover() {
     try {
@@ -21,7 +38,7 @@ export async function explorePage(root) {
       const exclude = new Set([state.me.id, ...fol]);
       const [users, posts] = await Promise.all([
         sb.from('profiles').select(PROFILE_MINI).order('created_at', { ascending: false }).limit(30),
-        sb.from('posts').select(POST_SELECT).order('created_at', { ascending: false }).limit(20),
+        sb.from('posts').select(POST_SELECT).or('media_type.is.null,media_type.neq.video').order('created_at', { ascending: false }).limit(20),
       ]);
       const sugg = users.filter((u) => !exclude.has(u.id)).slice(0, 6);
       clear(discover);
@@ -58,4 +75,5 @@ export async function explorePage(root) {
     }, 350);
   });
   await loadDiscover();
+  return () => { stopReels?.(); document.body.classList.remove('reels-on'); };
 }
