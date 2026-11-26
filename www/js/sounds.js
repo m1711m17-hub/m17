@@ -30,7 +30,7 @@ export function setSoundPreset(key, id) {
 export function setSoundFromFile(key, file) {
   return new Promise((resolve, reject) => {
     if (!TYPES[key]) return reject(new Error('نوع النغمة غير معروف'));
-    if (!file || (!/^audio\\//i.test(file.type || '') && !/\\.(mp3|m4a|aac|wav|ogg|opus|3gp)$/i.test(file.name || ''))) return reject(new Error('اختر ملفاً صوتياً صالحاً'));
+    if (!file || (!/^audio\//i.test(file.type || '') && !/\.(mp3|m4a|aac|wav|ogg|opus|3gp)$/i.test(file.name || ''))) return reject(new Error('اختر ملفاً صوتياً صالحاً'));
     if (file.size > MAX_BYTES) return reject(new Error('حجم الملف كبير. الحد الأقصى 1.5 ميغابايت'));
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('تعذرت قراءة الملف'));
