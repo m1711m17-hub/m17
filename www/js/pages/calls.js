@@ -4,6 +4,7 @@ import { AudioRoute } from '../lib/audio-route.js';
 import { sb, state, bus, rtLive, PROFILE_MINI } from '../api.js';
 import { ICE_SERVERS, refreshIce } from '../config.js';
 import { headerBar } from './home.js';
+import { startIncomingCallSound } from '../sounds.js';
 
 let cur = null;
 const seenSig = new Set(); const handled = new Set(); const pendingIncoming = new Set();
@@ -12,6 +13,7 @@ const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 
 
 // ---- tones (generated, no asset files) ----
 function ringer(mode) {
+  if (mode === 'in') { const customStop = startIncomingCallSound(); if (customStop) { try { navigator.vibrate?.([300, 150, 300]); } catch {} const iv = setInterval(() => { try { navigator.vibrate?.([300, 150, 300]); } catch {} }, 2200); return () => { clearInterval(iv); customStop(); try { navigator.vibrate?.(0); } catch {} }; } }
   let ac; try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return () => {}; }
   let stopped = false;
   const beep = (f, d) => { if (stopped) return; try { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; g.gain.value = 0.0001; o.connect(g); g.connect(ac.destination); const t = ac.currentTime; g.gain.exponentialRampToValueAtTime(0.22, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.start(t); o.stop(t + d + 0.05); } catch {} };
