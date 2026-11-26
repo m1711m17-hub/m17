@@ -3,11 +3,11 @@ const PREFIX = 'nexora.sound.';
 const MAX_BYTES = 1500 * 1024;
 const TYPES = { message: 'نغمة الرسائل', call: 'نغمة المكالمات' };
 export const SOUND_PRESETS = [
-  { id: 'soft', name: 'نسمة', notes: [659, 784, 988, 784, 659, 784, 988, 1175], durations: [0.38, 0.38, 0.52, 0.38, 0.38, 0.38, 0.52, 0.72] },
-  { id: 'crystal', name: 'كريستال', notes: [784, 988, 1175, 1319, 1175, 988, 1175, 1568], durations: [0.32, 0.32, 0.42, 0.62, 0.32, 0.32, 0.42, 0.82] },
-  { id: 'pulse', name: 'نبض', notes: [523, 659, 784, 659, 523, 659, 880, 784], durations: [0.42, 0.42, 0.58, 0.42, 0.42, 0.42, 0.58, 0.72] },
-  { id: 'classic', name: 'كلاسيك', notes: [880, 784, 698, 784, 880, 988, 880, 784], durations: [0.48, 0.38, 0.38, 0.48, 0.48, 0.58, 0.48, 0.82] },
-  { id: 'calm', name: 'هدوء', notes: [523, 587, 659, 784, 659, 587, 523, 659], durations: [0.48, 0.42, 0.48, 0.72, 0.48, 0.42, 0.58, 0.82] }
+  { id: 'moonlight', name: 'ضوء القمر', waveform: 'triangle', notes: [523, 659, 784, 1047, 988, 784, 659, 587, 659, 784], durations: [0.42, 0.42, 0.55, 0.72, 0.42, 0.42, 0.55, 0.42, 0.55, 0.85] },
+  { id: 'cinema', name: 'سينمائي', waveform: 'sine', notes: [392, 523, 659, 784, 698, 659, 523, 587, 784, 880], durations: [0.55, 0.45, 0.55, 0.8, 0.55, 0.45, 0.65, 0.5, 0.65, 1.0] },
+  { id: 'piano', name: 'بيانو ناعم', waveform: 'triangle', notes: [659, 784, 880, 784, 659, 587, 659, 784, 988, 880], durations: [0.3, 0.35, 0.55, 0.35, 0.45, 0.4, 0.35, 0.5, 0.65, 0.9] },
+  { id: 'arabesque', name: 'شرقي', waveform: 'sine', notes: [440, 494, 587, 659, 587, 523, 494, 440, 523, 587], durations: [0.42, 0.32, 0.52, 0.65, 0.38, 0.42, 0.32, 0.58, 0.42, 0.9] },
+  { id: 'sunrise', name: 'شروق', waveform: 'triangle', notes: [587, 659, 784, 880, 1047, 880, 784, 659, 784, 988], durations: [0.4, 0.4, 0.48, 0.55, 0.8, 0.45, 0.45, 0.55, 0.5, 0.95] }
 ];
 function read(key) { try { return localStorage.getItem(PREFIX + key) || ''; } catch { return ''; } }
 function selected(key) { try { return localStorage.getItem(PREFIX + key + '.preset') || ''; } catch { return ''; } }
@@ -46,16 +46,28 @@ function runPreset(key, loop) {
   let stopped = false, timer = null;
   const play = () => {
     if (stopped) return;
-    let at = ac.currentTime + 0.03;
+    let at = ac.currentTime + 0.04;
     preset.notes.forEach((freq, i) => {
-      const osc = ac.createOscillator(), gain = ac.createGain(), dur = preset.durations[i] || 0.16;
-      osc.type = 'sine'; osc.frequency.setValueAtTime(freq, at); gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(key === 'call' ? 0.16 : 0.11, at + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-      osc.connect(gain); gain.connect(ac.destination); osc.start(at); osc.stop(at + dur + 0.02); at += dur + 0.055;
+      const dur = preset.durations[i] || 0.4;
+      const melody = ac.createOscillator(), envelope = ac.createGain();
+      melody.type = preset.waveform || 'triangle';
+      melody.frequency.setValueAtTime(freq, at);
+      envelope.gain.setValueAtTime(0.0001, at);
+      envelope.gain.exponentialRampToValueAtTime(key === 'call' ? 0.13 : 0.095, at + 0.025);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+      melody.connect(envelope); envelope.connect(ac.destination);
+      melody.start(at); melody.stop(at + dur + 0.03);
+      const harmony = ac.createOscillator(), harmonyGain = ac.createGain();
+      harmony.type = 'sine'; harmony.frequency.setValueAtTime(freq * 1.5, at);
+      harmonyGain.gain.setValueAtTime(0.0001, at);
+      harmonyGain.gain.exponentialRampToValueAtTime(0.022, at + 0.035);
+      harmonyGain.gain.exponentialRampToValueAtTime(0.0001, at + dur * 0.88);
+      harmony.connect(harmonyGain); harmonyGain.connect(ac.destination);
+      harmony.start(at); harmony.stop(at + dur + 0.03);
+      at += dur + 0.075;
     });
-    if (loop) timer = setTimeout(play, Math.max(250, (at - ac.currentTime) * 1000 + 250));
-    else timer = setTimeout(() => { try { ac.close(); } catch {} }, Math.max(500, (at - ac.currentTime) * 1000 + 100));
+    if (loop) timer = setTimeout(play, Math.max(300, (at - ac.currentTime) * 1000 + 300));
+    else timer = setTimeout(() => { try { ac.close(); } catch {} }, Math.max(600, (at - ac.currentTime) * 1000 + 120));
   };
   try { ac.resume?.(); play(); } catch { try { ac.close(); } catch {} return null; }
   return () => { stopped = true; clearTimeout(timer); try { ac.close(); } catch {} };
