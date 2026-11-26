@@ -59,27 +59,46 @@ jobs:
           sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]*\"/versionName \"$V\"/" $G
           grep -n "versionCode\|versionName" $G
       - run: npx cap sync android
-      - name: Build debug APK
-        working-directory: android
-        run: ./gradlew assembleDebug
-      - name: Sign APK with permanent NEXORA key
+      - name: Configure permanent NEXORA signing
         env:
           NEXORA_KEYSTORE_B64: ${{ secrets.NEXORA_KEYSTORE_B64 }}
           NEXORA_KEYSTORE_PASSWORD: ${{ secrets.NEXORA_KEYSTORE_PASSWORD }}
           NEXORA_KEY_ALIAS: ${{ secrets.NEXORA_KEY_ALIAS }}
           NEXORA_KEY_PASSWORD: ${{ secrets.NEXORA_KEY_PASSWORD }}
         run: |
-          APK=android/app/build/outputs/apk/debug/app-debug.apk
-          if [ -n "$NEXORA_KEYSTORE_B64" ] && [ -n "$NEXORA_KEYSTORE_PASSWORD" ] && [ -n "$NEXORA_KEY_ALIAS" ] && [ -n "$NEXORA_KEY_PASSWORD" ]; then
-            echo "$NEXORA_KEYSTORE_B64" | base64 --decode > /tmp/nexora-release.jks
-            test -s /tmp/nexora-release.jks
-            $ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner sign --ks /tmp/nexora-release.jks --ks-key-alias "$NEXORA_KEY_ALIAS" --ks-pass env:NEXORA_KEYSTORE_PASSWORD --key-pass env:NEXORA_KEY_PASSWORD --out NEXORA.apk "$APK"
-            $ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner verify --verbose NEXORA.apk
-            echo "APK signed with the permanent NEXORA key."
-          else
+          if [ -z "$NEXORA_KEYSTORE_B64" ] || [ -z "$NEXORA_KEYSTORE_PASSWORD" ] || [ -z "$NEXORA_KEY_ALIAS" ] || [ -z "$NEXORA_KEY_PASSWORD" ]; then
             echo "::error::Permanent signing secrets are missing. Add NEXORA_KEYSTORE_B64, NEXORA_KEYSTORE_PASSWORD, NEXORA_KEY_ALIAS, and NEXORA_KEY_PASSWORD before publishing an APK."
             exit 1
           fi
+          echo "$NEXORA_KEYSTORE_B64" | base64 --decode > /tmp/nexora-release.jks
+          test -s /tmp/nexora-release.jks
+          cat >> android/app/build.gradle <<'GRADLE'
+          android {
+            signingConfigs {
+              nexoraRelease {
+                storeFile file('/tmp/nexora-release.jks')
+                storePassword System.getenv('NEXORA_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('NEXORA_KEY_ALIAS')
+                keyPassword System.getenv('NEXORA_KEY_PASSWORD')
+              }
+            }
+            buildTypes {
+              release {
+                signingConfig signingConfigs.nexoraRelease
+              }
+            }
+          }
+          GRADLE
+      - name: Build permanently signed APK
+        working-directory: android
+        env:
+          NEXORA_KEYSTORE_PASSWORD: ${{ secrets.NEXORA_KEYSTORE_PASSWORD }}
+          NEXORA_KEY_ALIAS: ${{ secrets.NEXORA_KEY_ALIAS }}
+          NEXORA_KEY_PASSWORD: ${{ secrets.NEXORA_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../NEXORA.apk
+          $ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner verify --verbose ../NEXORA.apk
       - uses: actions/upload-artifact@v4
         with:
           name: NEXORA-apk
