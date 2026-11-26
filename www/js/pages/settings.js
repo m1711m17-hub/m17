@@ -112,6 +112,7 @@ export async function settingsPage(root, params, ctx) {
   }
 
   box.append(h('h4', { class: 'sec' }, 'الإشعارات'), h('div', { class: 'card-list' },
+    row('music', 'نغمات التطبيق', 'تخصيص نغمة الرسائل والمكالمات واختيار ملفات من الهاتف', null, soundSettingsSheet),
     row('bell', 'اختبار الإشعارات', 'يرسل إشعاراً حقيقياً إلى هذا الجهاز', null, async () => {
       if (!pushSupported()) return toast('إشعارات Push تعمل داخل تطبيق Android فقط', 'err');
       await initPush();
