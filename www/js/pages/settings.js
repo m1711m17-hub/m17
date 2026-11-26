@@ -6,6 +6,7 @@ import { VIS_LABEL } from './stories.js';
 import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
 import { editProfileSheet } from './profile.js';
 import { checkForUpdates, updateState, getWhatsappUrl, openExternal, updateCard } from '../update.js';
+import { setSoundFromFile, soundName, resetSound, previewSound } from '../sounds.js';
 
 export async function settingsPage(root, params, ctx) {
   const box = h('div', { class: 'page' });
@@ -84,6 +85,31 @@ export async function settingsPage(root, params, ctx) {
 
   // offer owner activation only while no owner exists
   try { if (state.me.role !== 'OWNER' && !(await sb.rpc('owner_exists'))) box.append(h('div', { class: 'card-list' }, row('shield', 'تفعيل حساب المالك', 'لديك رمز المالك؟', null, claimSheet))); } catch {}
+
+  function soundSettingsSheet() {
+    sheet('نغمات التطبيق', (body) => {
+      body.append(h('p', { class: 'muted small' }, 'اختر نغمة مستقلة للرسائل والمكالمات. الملفات المختارة تُحفظ على هذا الجهاز فقط.'));
+      const makeSoundRow = (key, title, desc) => {
+        const status = h('div', { class: 'muted small' }, soundName(key));
+        const file = h('input', { type: 'file', accept: 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.3gp', style: { display: 'none' }, onchange: async () => {
+          const selected = file.files?.[0]; if (!selected) return;
+          try { const name = await setSoundFromFile(key, selected); status.textContent = name; toast('تم حفظ النغمة على هذا الجهاز', 'ok'); }
+          catch (e) { toast(e.message || 'تعذر حفظ النغمة', 'err'); }
+          file.value = '';
+        } });
+        const choose = h('button', { class: 'btn primary sm', onclick: () => file.click() }, 'اختيار من الملفات');
+        const preview = h('button', { class: 'btn ghost sm', onclick: () => { if (!previewSound(key)) toast('اختر نغمة أولاً', 'err'); } }, 'معاينة');
+        const reset = h('button', { class: 'btn ghost sm', onclick: () => { resetSound(key); status.textContent = 'النغمة الأصلية'; toast('تمت استعادة النغمة الأصلية', 'ok'); } }, 'استعادة الأصلية');
+        return h('div', { class: 'menu-item', style: { display: 'block', padding: '14px 12px' } },
+          h('div', { class: 'row between' }, h('b', null, title), status),
+          h('div', { class: 'muted small', style: { margin: '5px 0 10px' } }, desc),
+          h('div', { class: 'row wrap gap' }, choose, preview, reset), file);
+      };
+      body.append(makeSoundRow('message', 'نغمة الرسائل', 'تعمل عند وصول رسالة جديدة والتطبيق مفتوح.'),
+        makeSoundRow('call', 'نغمة المكالمات', 'تعمل عند ورود مكالمة والتطبيق مفتوح.'));
+      body.append(h('p', { class: 'muted small' }, 'ملاحظة: نغمات إشعارات النظام التي تصل والتطبيق مغلق تعتمد حالياً على إعدادات إشعارات Android.'));
+    }, { full: true });
+  }
 
   box.append(h('h4', { class: 'sec' }, 'الإشعارات'), h('div', { class: 'card-list' },
     row('bell', 'اختبار الإشعارات', 'يرسل إشعاراً حقيقياً إلى هذا الجهاز', null, async () => {
