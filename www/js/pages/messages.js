@@ -121,6 +121,7 @@ export async function chatPage(root, params) {
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'اتصال صوتي', onclick: () => placeCall(peer, 'audio') }, icon('phone', 22)),
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'اتصال فيديو', onclick: () => placeCall(peer, 'video') }, icon('video', 22)),
     h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'المزيد', onclick: () => actionSheet('@' + peer.username, [
+      { label: 'بحث في المحادثة', icon: 'search', run: openChatSearch },
       { label: 'عرض الملف الشخصي', icon: 'user', run: () => (location.hash = `#/u/${peer.username}`) },
       { label: 'إبلاغ', icon: 'flag', run: () => reportDialog('user', peer.id) },
       { label: 'حظر المستخدم', icon: 'block', danger: true, run: async () => { if (await blockUser(peer)) location.hash = '#/messages'; } },
@@ -188,6 +189,75 @@ export async function chatPage(root, params) {
     if (!el) return toast('الرسالة الأصلية قديمة وغير محمّلة', 'err');
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
+  }
+
+  // Load a small window around a search result so older messages can be opened,
+  // not merely found in the database.
+  async function loadAround(target) {
+    const me = state.me.id;
+    const conversation = `and(sender_id.eq.${me},receiver_id.eq.${peer.id}),and(sender_id.eq.${peer.id},receiver_id.eq.${me})`;
+    try {
+      const [older, newer, exact] = await Promise.all([
+        sb.from('messages').select('*').or(conversation).lte('created_at', target.created_at).order('created_at', { ascending: false }).limit(30),
+        sb.from('messages').select('*').or(conversation).gt('created_at', target.created_at).order('created_at', { ascending: true }).limit(30),
+        sb.from('messages').select('*').eq('id', target.id).one(),
+      ]);
+      const unique = new Map();
+      [...older.reverse(), ...newer, exact].filter(Boolean).forEach((m) => unique.set(m.id, m));
+      const rows = [...unique.values()].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      msgs.replaceChildren(); seen.clear(); lastDay = '';
+      addMsgs(rows);
+      const el = msgs.querySelector(`[data-id="${target.id}"]`);
+      if (el) {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 1600);
+      } else toast('لم تعد الرسالة متاحة', 'err');
+    } catch (e) { toast(e.message || 'تعذّر فتح الرسالة', 'err'); }
+  }
+
+  // Search the complete private conversation; results open the message in context.
+  function openChatSearch() {
+    let timer = null, seq = 0;
+    sheet('البحث في المحادثة', (body, close) => {
+      const q = h('input', { class: 'input search', placeholder: 'ابحث في رسائل هذه المحادثة...' });
+      const hint = h('div', { class: 'empty small' }, 'اكتب حرفين على الأقل للبحث');
+      const out = h('div', { class: 'card-list' });
+      body.append(q, hint, out);
+      q.addEventListener('input', () => {
+        clearTimeout(timer);
+        const current = ++seq;
+        const term = q.value.trim().replace(/[%_,()]/g, ' ').trim();
+        clear(out);
+        if (term.length < 2) { hint.textContent = 'اكتب حرفين على الأقل للبحث'; return; }
+        hint.textContent = 'جارٍ البحث...';
+        timer = setTimeout(async () => {
+          try {
+            const me = state.me.id;
+            const conversation = `and(sender_id.eq.${me},receiver_id.eq.${peer.id}),and(sender_id.eq.${peer.id},receiver_id.eq.${me})`;
+            const rows = await sb.from('messages').select('id,sender_id,body,created_at,deleted_all')
+              .or(conversation).ilike('body', '%' + term + '%')
+              .order('created_at', { ascending: false }).limit(50);
+            if (current !== seq) return;
+            const matches = rows.filter((m) => !m.deleted_all && m.body);
+            clear(out);
+            if (!matches.length) { hint.textContent = 'لا توجد رسائل مطابقة'; return; }
+            hint.textContent = matches.length + ' نتيجة';
+            matches.forEach((m) => {
+              const who = m.sender_id === state.me.id ? 'أنت' : (peer.display_name || peer.username);
+              out.append(h('button', { class: 'user-row', type: 'button', onclick: async () => { close(); await loadAround(m); } },
+                h('div', { class: 'grow' },
+                  h('b', null, who),
+                  h('div', { class: 'muted small' }, m.body.length > 150 ? m.body.slice(0, 150) + '…' : m.body),
+                  h('div', { class: 'muted small' }, dayLabel(m.created_at) + ' · ' + hhmm(m.created_at)))));
+            });
+          } catch (e) {
+            if (current === seq) { clear(out); hint.textContent = 'تعذّر البحث'; toast(e.message || 'تعذّر البحث في المحادثة', 'err'); }
+          }
+        }, 280);
+      });
+      q.focus();
+    }, { full: true });
   }
   async function fillQuotes(rows) {
     const need = [...new Set(rows.filter((m) => m.reply_to && !seen.has(m.reply_to) && !quoteCache.has(m.reply_to)).map((m) => m.reply_to))];
