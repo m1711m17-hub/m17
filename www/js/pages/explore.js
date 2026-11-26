@@ -1,6 +1,5 @@
 import { h, icon, avatar, clear, toast, badge } from '../lib/dom.js';
-import { sb, state, enrichPosts, POST_SELECT, PROFILE_MINI } from '../api.js';
-import { postCard } from './postcard.js';
+import { sb, state, PROFILE_MINI } from '../api.js';
 import { headerBar, bellButton } from './home.js';
 import { followButton } from './profile.js';
 import { reelsView } from './reels.js';
@@ -11,14 +10,14 @@ export function userRow(p, extra) {
 }
 
 export async function explorePage(root) {
-  const input = h('input', { class: 'input search', placeholder: 'ابحث عن مستخدمين أو منشورات...', type: 'search' });
+  const input = h('input', { class: 'input search', placeholder: 'ابحث عن مستخدمين...', type: 'search' });
   const results = h('div'), discover = h('div');
   const reelsHost = h('div', { class: 'reels-host', hidden: true });
   const wrap = h('div', { class: 'search-wrap' }, icon('search', 20), input);
   let tab = 'posts', stopReels = null;
   const tabs = h('div', { class: 'chips explore-tabs' });
   function paintTabs() {
-    clear(tabs).append(...[['posts', 'المنشورات', 'image'], ['reels', 'ريلز', 'video']].map(([k, l, ic]) => h('button', { class: 'chip' + (tab === k ? ' on' : ''), type: 'button', onclick: () => setTab(k) }, icon(ic, 16), l)));
+    clear(tabs).append(...[['posts', 'الأشخاص', 'users'], ['reels', 'ريلز', 'video']].map(([k, l, ic]) => h('button', { class: 'chip' + (tab === k ? ' on' : ''), type: 'button', onclick: () => setTab(k) }, icon(ic, 16), l)));
   }
   function setTab(k) {
     tab = k; paintTabs();
@@ -36,17 +35,11 @@ export async function explorePage(root) {
     try {
       const fol = (await sb.from('follows').select('following_id').eq('follower_id', state.me.id)).map((r) => r.following_id);
       const exclude = new Set([state.me.id, ...fol]);
-      const [users, posts] = await Promise.all([
-        sb.from('profiles').select(PROFILE_MINI).order('created_at', { ascending: false }).limit(30),
-        sb.from('posts').select(POST_SELECT).or('media_type.is.null,media_type.neq.video').order('created_at', { ascending: false }).limit(20),
-      ]);
-      const sugg = users.filter((u) => !exclude.has(u.id)).slice(0, 6);
+      const users = await sb.from('profiles').select(PROFILE_MINI).order('created_at', { ascending: false }).limit(60);
+      const sugg = users.filter((u) => !exclude.has(u.id)).slice(0, 40);
       clear(discover);
       if (sugg.length) discover.append(h('h3', { class: 'sec' }, 'أشخاص قد تعرفهم'), h('div', { class: 'card-list' }, sugg.map((u) => userRow(u, followButton(u, { small: true })))));
-      await enrichPosts(posts);
-      discover.append(h('h3', { class: 'sec' }, 'أحدث المنشورات'));
-      if (!posts.length) discover.append(h('div', { class: 'empty' }, icon('compass', 44), h('p', null, 'لا توجد منشورات بعد. كن أول من ينشر!')));
-      posts.forEach((p) => discover.append(postCard(p)));
+      else discover.append(h('div', { class: 'empty' }, icon('users', 44), h('p', null, 'تتابع جميع المستخدمين حالياً')));
     } catch (e) { clear(discover).append(h('div', { class: 'empty' }, e.message)); }
   }
 
@@ -60,17 +53,12 @@ export async function explorePage(root) {
       const my = ++seq;
       try {
         const safe = q.replace(/[%*,()\\]/g, ' ').trim(); if (!safe) return;
-        const [users, posts] = await Promise.all([
-          sb.from('profiles').select(PROFILE_MINI).or(`username.ilike.*${safe}*,display_name.ilike.*${safe}*`).limit(20),
-          sb.from('posts').select(POST_SELECT).ilike('body', `*${safe}*`).order('created_at', { ascending: false }).limit(15),
-        ]);
+        const users = await sb.from('profiles').select(PROFILE_MINI).or(`username.ilike.*${safe}*,display_name.ilike.*${safe}*`).limit(30);
         if (my !== seq) return;
         users.sort((a, b) => (b.username === safe.toLowerCase()) - (a.username === safe.toLowerCase()));
-        await enrichPosts(posts);
         clear(results);
-        if (!users.length && !posts.length) return results.append(h('div', { class: 'empty' }, icon('search', 44), h('p', null, 'لا نتائج مطابقة')));
+        if (!users.length) return results.append(h('div', { class: 'empty' }, icon('search', 44), h('p', null, 'لا نتائج مطابقة')));
         if (users.length) results.append(h('h3', { class: 'sec' }, 'المستخدمون'), h('div', { class: 'card-list' }, users.filter((u) => u.id !== state.me.id || true).map((u) => userRow(u, u.id === state.me.id ? null : followButton(u, { small: true })))));
-        if (posts.length) results.append(h('h3', { class: 'sec' }, 'المنشورات'), posts.map((p) => postCard(p)));
       } catch (e) { toast(e.message, 'err'); }
     }, 350);
   });
