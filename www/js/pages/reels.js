@@ -1,6 +1,7 @@
 import { h, icon, avatar, clear, toast, compact, badge, verifiedBadge } from '../lib/dom.js';
 import { sb, state, enrichPosts, POST_SELECT } from '../api.js';
 import { openComments } from './postcard.js';
+import { sharePostSheet, hiddenReels } from './share.js';
 
 // Reels: vertical, full-height, snap-scrolling video feed (videos only). Used inside the Explore page.
 export function reelsView(host) {
@@ -33,7 +34,7 @@ export function reelsView(host) {
     const paint = () => {
       clear(likeBtn).append(icon('heart', 28), h('span', null, compact(post.nLikes))); likeBtn.classList.toggle('on', post.liked);
       clear(cBtn).append(icon('comment', 28), h('span', null, compact(post.nComments)));
-      clear(sBtn).append(icon('share', 28), h('span', null, compact(post.nShares))); sBtn.classList.toggle('on', post.shared);
+      clear(sBtn).append(icon('share', 28), h('span', null, compact(post.nShares)));
     };
     likeBtn.onclick = async () => {
       const was = post.liked; post.liked = !was; post.nLikes += was ? -1 : 1; paint();
@@ -41,13 +42,7 @@ export function reelsView(host) {
       catch (e) { post.liked = was; post.nLikes += was ? 1 : -1; paint(); toast(e.message, 'err'); }
     };
     cBtn.onclick = () => openComments(post, (d) => { post.nComments += d; paint(); });
-    sBtn.onclick = async () => {
-      const link = `${location.origin}${location.pathname}#/post/${post.id}`;
-      const text = `${post.body ? post.body.slice(0, 100) + ' — ' : ''}@${a.username} على NEXORA`;
-      if (!post.shared) { try { await sb.from('shares').insert({ post_id: post.id, user_id: state.me.id }); post.shared = true; post.nShares++; paint(); } catch (e) { return toast(e.message, 'err'); } }
-      try { if (navigator.share) { await navigator.share({ text, url: link }); return; } } catch { return; }
-      try { await navigator.clipboard.writeText(`${text}\n${link}`); toast('تم نسخ رابط الفيديو', 'ok'); } catch { toast('تمت المشاركة', 'ok'); }
-    };
+    sBtn.onclick = () => sharePostSheet(post, { onShared: paint, onHidden: () => { el.remove(); io.unobserve(el); if (!box.querySelector('.reel')) loadMore(); } });
     const playIcon = h('div', { class: 'reel-pause', hidden: true }, icon('play', 54));
     const muteBtn = h('button', { class: 'reel-mute', type: 'button', onclick: (e) => { e.stopPropagation(); muted = !muted; syncMute(); } }, icon(muted ? 'micoff' : 'speaker', 20));
     const el = h('section', { class: 'reel' }, v, playIcon, muteBtn,
@@ -68,7 +63,8 @@ export function reelsView(host) {
       let q = sb.from('posts').select(POST_SELECT).eq('media_type', 'video').order('created_at', { ascending: false }).limit(PAGE);
       if (before) q = q.lt('created_at', before);
       const rows = await enrichPosts(await q);
-      rows.filter((p) => p.media_url).forEach((p) => box.append(reel(p)));
+      const hid = hiddenReels();
+      rows.filter((p) => p.media_url && !hid.has(p.id)).forEach((p) => box.append(reel(p)));
       if (rows.length) before = rows.at(-1).created_at;
       if (rows.length < PAGE) done = true;
       if (!box.children.length) box.append(h('div', { class: 'empty reels-empty' }, icon('video', 46), h('h3', null, 'لا توجد فيديوهات بعد'), h('p', null, 'انشر أول فيديو من زر + وسيظهر هنا.')));

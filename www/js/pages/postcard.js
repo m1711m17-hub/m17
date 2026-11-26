@@ -1,3 +1,4 @@
+import { sharePostSheet } from './share.js';
 import { h, icon, avatar, toast, sheet, actionSheet, confirmBox, timeAgo, compact, badge, verifiedBadge, clear } from '../lib/dom.js';
 import { sb, state, hasPerm, feature, POST_SELECT, PROFILE_MINI } from '../api.js';
 import { arabicError } from '../lib/supabase-lite.js';
@@ -86,15 +87,7 @@ export function postCard(post, { onDeleted, detail = false } = {}) {
     } catch (e) { post.liked = was; post.nLikes += was ? 1 : -1; paint(); toast(e.message, 'err'); }
   };
   cBtn.onclick = () => detail ? document.getElementById('comment-input-anchor')?.scrollIntoView({ behavior: 'smooth' }) : openComments(post, (d) => { post.nComments += d; paint(); });
-  sBtn.onclick = async () => {
-    const link = `${location.origin}${location.pathname}#/post/${post.id}`;
-    const text = `${post.body ? post.body.slice(0, 100) + ' — ' : ''}@${a.username} على NEXORA`;
-    if (!post.shared) {
-      try { await sb.from('shares').insert({ post_id: post.id, user_id: state.me.id }); post.shared = true; post.nShares++; paint(); } catch (e) { return toast(e.message, 'err'); }
-    }
-    try { if (navigator.share) { await navigator.share({ text, url: link }); return; } } catch { return; }
-    try { await navigator.clipboard.writeText(`${text}\n${link}`); toast('تم نسخ رابط المنشور', 'ok'); } catch { toast('تمت المشاركة', 'ok'); }
-  };
+  sBtn.onclick = () => sharePostSheet(post, { onShared: paint });
 
   const menu = () => actionSheet('خيارات المنشور', [
     a.id === state.me.id && { label: 'حذف المنشور', icon: 'trash', danger: true, run: async () => {

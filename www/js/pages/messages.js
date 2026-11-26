@@ -30,6 +30,13 @@ function lastText(c) {
   return c.last_body || (c.last_media_type === 'video' ? '🎬 فيديو' : '🖼️ صورة');
 }
 
+// "nexora://post/<id>" (sent by the share sheet) becomes a tappable in-app link.
+function bodyParts(text) {
+  const out = []; const re = /nexora:\/\/post\/([0-9a-f-]{36})/gi; let last = 0, x;
+  while ((x = re.exec(text))) { if (x.index > last) out.push(text.slice(last, x.index)); out.push(h('a', { class: 'post-link', href: '#/post/' + x[1] }, 'عرض المنشور ›')); last = x.index + x[0].length; }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
 export async function messagesPage(root) {
   const list = h('div', { class: 'card-list' });
   const newBtn = h('button', { class: 'icon-btn', 'aria-label': 'محادثة جديدة', onclick: newChat }, icon('edit', 22));
@@ -218,7 +225,7 @@ export async function chatPage(root, params) {
       if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
       if (m.audio_url) kids.push(voiceBubble(m, { mine }));
       if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
-      if (m.body) kids.push(h('div', { class: 'b-text' }, m.body));
+      if (m.body) kids.push(h('div', { class: 'b-text' }, ...bodyParts(m.body)));
     }
     kids.push(h('div', { class: 'b-meta' }, pending ? '…' : hhmm(m.created_at), mine && m.read_at ? ' ✓✓' : ''));
     return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (call ? ' call-event' : '') + (m.sticker ? ' bare' : '') + (m.audio_url ? ' has-voice' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
