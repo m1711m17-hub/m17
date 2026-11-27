@@ -137,6 +137,7 @@ export function postCard(post, { onDeleted, detail = false } = {}) {
     post.body && h('div', { class: 'p-body', onclick: () => !detail && go(`#/post/${post.id}`) }, post.body),
     media,
     h('footer', { class: 'p-actions' }, likeBtn, cBtn, sBtn));
+  if (post.media_type === 'video' && !detail) media?.addEventListener('click', () => go(`#/post/${post.id}`));
   paint();
   return card;
 }
