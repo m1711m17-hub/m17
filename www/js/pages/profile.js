@@ -126,11 +126,34 @@ export async function profilePage(root, params) {
       actions)));
 
   if (isMe && !p.is_verified) box.append(h('div', { class: 'verify-request-wrap' }, h('button', { class: 'btn ghost block', onclick: verificationSheet }, '✓ طلب توثيق الحساب')));
-  const postsBox = h('div', { class: 'feed' });
-  box.append(isMe ? quickComposer() : null, h('h3', { class: 'sec' }, 'المنشورات'), postsBox);
+  box.append(isMe ? quickComposer() : null);
+  const privateMessage = p.is_private && !isMe && !amFollowing
+    ? h('span', null, icon('lock', 30), h('br'), 'هذا الحساب خاص. تابعه لرؤية منشوراته.')
+    : null;
   try {
-    const rows = await enrichPosts(await sb.from('posts').select(POST_SELECT).eq('author_id', p.id).order('created_at', { ascending: false }).limit(30));
-    if (!rows.length) postsBox.append(h('div', { class: 'empty small' }, p.is_private && !isMe && !amFollowing ? h('span', null, icon('lock', 30), h('br'), 'هذا الحساب خاص. تابعه لرؤية منشوراته.') : 'لا توجد منشورات بعد'));
-    rows.forEach((r) => postsBox.append(postCard(r)));
-  } catch (e) { postsBox.append(h('div', { class: 'empty small' }, e.message)); }
+    const rows = await enrichPosts(await sb.from('posts').select(POST_SELECT).eq('author_id', p.id).order('created_at', { ascending: false }).limit(60));
+    const videos = rows.filter((r) => r.media_type === 'video' && r.media_url);
+    const otherPosts = rows.filter((r) => !(r.media_type === 'video' && r.media_url));
+
+    if (videos.length) {
+      const videoGrid = h('div', { class: 'profile-video-grid' });
+      videos.forEach((r) => {
+        const tile = h('button', { class: 'profile-video-tile', type: 'button', 'aria-label': 'مشاهدة الفيديو', onclick: () => { location.hash = '#/post/' + r.id; } },
+          h('video', { src: r.media_url, muted: true, playsinline: true, preload: 'metadata' }),
+          h('span', { class: 'profile-video-play' }, icon('play', 22)),
+          h('span', { class: 'profile-video-caption' }, r.body || 'فيديو'));
+        videoGrid.append(tile);
+      });
+      box.append(h('h3', { class: 'sec' }, 'الفيديوهات'), videoGrid);
+    }
+
+    if (otherPosts.length) {
+      const postsBox = h('div', { class: 'feed' });
+      box.append(h('h3', { class: 'sec' }, 'المنشورات'), postsBox);
+      otherPosts.forEach((r) => postsBox.append(postCard(r)));
+    }
+
+    if (!rows.length) box.append(h('div', { class: 'empty small' }, privateMessage || 'لا توجد منشورات بعد'));
+    else if (!videos.length && !otherPosts.length) box.append(h('div', { class: 'empty small' }, 'لا يوجد محتوى بعد'));
+  } catch (e) { box.append(h('div', { class: 'empty small' }, e.message)); }
 }
