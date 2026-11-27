@@ -405,7 +405,7 @@ body.in-chat .tabbar{display:none}
 #toasts{z-index:160}
 .live-screen ~ .sheet-back{z-index:150}
 .lx-svg{display:inline-flex;align-items:center;justify-content:center;flex:none}.lx-svg svg{display:block;width:100%;height:100%}
-.lx-screen{--lu:calc(100vw/1212);background:#000;font-family:'Tajawal',system-ui,sans-serif}
+.lx-screen{--lu:calc(100vw/1212);background:#000;font-family:system-ui,'Noto Sans Arabic','Noto Naskh Arabic',Arial,sans-serif}
 .lx-screen button,.lx-screen input{font-family:inherit}
 /* ===== setup (calc(var(--u)*1) = 100vw/941, measured from the reference screenshot) ===== */
 .lx-setup{--u:calc(100vw/941);position:absolute;inset:0;z-index:6;overflow-y:auto;overflow-x:hidden;background:#040818}
@@ -504,7 +504,7 @@ body.in-chat .tabbar{display:none}
 
 /* ===== LIVE setup (camera-style) ===== */
 .lt-bg{z-index:0;object-fit:cover}
-.lt-setup{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 12px calc(8px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(0,0,0,.4),transparent 25%,transparent 40%,rgba(0,0,0,.88) 100%);font-family:'Tajawal',system-ui,sans-serif;direction:rtl}
+.lt-setup{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 12px calc(8px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(0,0,0,.4),transparent 25%,transparent 40%,rgba(0,0,0,.88) 100%);font-family:system-ui,'Noto Sans Arabic','Noto Naskh Arabic',Arial,sans-serif;direction:rtl}
 .lt-setup[hidden]{display:none}.lt-grow{flex:1}
 .lt-top{display:flex;align-items:center;gap:10px;direction:ltr}.lt-sp{flex:1}
 .lt-c{width:42px;height:42px;border-radius:50%;background:rgba(40,40,40,.75);display:flex;align-items:center;justify-content:center;color:#fff}
@@ -526,11 +526,11 @@ body.in-chat .tabbar{display:none}
 .lt-set{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line)}
 
 /* invites + guests */
-.lx-invite{position:absolute;z-index:8;top:calc(var(--lu)*168);left:calc(var(--lu)*34);display:inline-flex;align-items:center;gap:6px;height:calc(var(--lu)*70);padding:0 calc(var(--lu)*34);border-radius:calc(var(--lu)*35);background:#3b9fe8;color:#fff;font-weight:800;font-size:calc(var(--lu)*32);font-family:'Tajawal',system-ui,sans-serif}
+.lx-invite{position:absolute;z-index:8;top:calc(var(--lu)*168);left:calc(var(--lu)*34);display:inline-flex;align-items:center;gap:6px;height:calc(var(--lu)*70);padding:0 calc(var(--lu)*34);border-radius:calc(var(--lu)*35);background:#3b9fe8;color:#fff;font-weight:800;font-size:calc(var(--lu)*32);font-family:system-ui,'Noto Sans Arabic','Noto Naskh Arabic',Arial,sans-serif}
 .lx-guestbar{position:absolute;z-index:8;left:50%;transform:translateX(-50%);bottom:calc(var(--lu)*330);display:flex;gap:8px;direction:rtl;white-space:nowrap}
 .lx-guestbar button{height:40px;padding:0 14px;font-size:.85rem;white-space:nowrap;border-radius:21px;background:rgba(20,150,80,.92);color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:6px}.lx-guestbar button:last-child{background:rgba(230,40,70,.92)}.lx-guestbar button.off{background:rgba(110,110,120,.92)}
 .lx-inv-back{position:fixed;inset:0;z-index:170;background:rgba(2,6,16,.7);display:flex;align-items:center;justify-content:center;padding:24px}
-.lx-inv{width:100%;max-width:340px;background:#14182c;border-radius:22px;padding:24px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;font-family:'Tajawal',system-ui,sans-serif}.lx-inv p{margin:0;opacity:.85}
+.lx-inv{width:100%;max-width:340px;background:#14182c;border-radius:22px;padding:24px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;font-family:system-ui,'Noto Sans Arabic','Noto Naskh Arabic',Arial,sans-serif}.lx-inv p{margin:0;opacity:.85}
 .lx-inv-btns{display:flex;gap:10px;width:100%;margin-top:6px}.lx-inv-btns .btn{flex:1}
 .lx-search{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;margin-bottom:8px}
 .lx-plist{display:flex;flex-direction:column;max-height:50vh;overflow-y:auto}.lx-prow{display:flex;align-items:center;gap:12px;padding:8px 2px;border-bottom:1px solid var(--line)}
