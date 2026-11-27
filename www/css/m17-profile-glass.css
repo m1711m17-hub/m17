@@ -1,0 +1,22 @@
+/* NEXORA profile — neon glass layout */
+.profile-card{position:relative;overflow:hidden;border-radius:34px;padding:0 16px 18px;background:linear-gradient(155deg,rgba(13,24,49,.94),rgba(7,11,27,.96) 58%,rgba(22,12,48,.94));border:1px solid rgba(146,164,255,.36);box-shadow:0 18px 48px #0006,0 0 24px #455cff22,inset 0 1px #ffffff20}
+.profile-card:before{content:"";position:absolute;inset:0 0 auto;height:235px;pointer-events:none;background:radial-gradient(ellipse at 5% 12%,#22e0ff38,transparent 54%),radial-gradient(ellipse at 96% 8%,#c230ff40,transparent 52%),linear-gradient(135deg,#00a4ff26,#8024ff29);border-bottom:1px solid #69adff30}
+.profile-card .cover{position:relative;height:155px;margin:0 -16px;border-radius:0 0 46px 46px;background:linear-gradient(145deg,transparent 42%,#1161ff35 43%,transparent 68%),linear-gradient(25deg,#00e1ff38,transparent 46%),linear-gradient(125deg,#062a60,#0756a5 34%,#4020a2 72%,#9916cf);border:1px solid #97eaff88;box-shadow:0 0 18px #1cbaff55,0 0 24px #a433ff38}
+.profile-card .pc-main{position:relative;z-index:1;margin-top:-72px;text-align:center}
+.profile-card .pc-main>.avatar{margin:0 auto 15px;box-shadow:0 0 0 5px #080d20,0 0 0 8px #259dff,0 0 0 10px #be48ff,0 0 28px #23b5ff99}
+.profile-card .pc-name{font-size:1.75rem;font-weight:900;line-height:1.4;text-shadow:0 2px 15px #4585ff38}
+.profile-card .pc-name .role-badge{padding:4px 13px;border-radius:22px;background:linear-gradient(110deg,#ff4b78,#b00091);box-shadow:0 0 16px #ff3d944d;font-size:.78rem}
+.profile-card .bio{font-size:1.03rem;line-height:1.8;margin:14px 0 18px;color:#f0f3ff}
+.profile-card .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:20px 0 17px;padding:14px 5px;border-radius:27px;background:linear-gradient(135deg,#162b4ec7,#231648b8);border:1px solid #8c91ff59;box-shadow:inset 0 1px #ffffff1a,0 0 18px #525aff20}
+.profile-card .stat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:70px}
+.profile-card .stat+.stat{border-inline-start:1px solid #aabfff38}
+.profile-card .stat b{font-size:1.65rem;line-height:1.2;color:#35aaff;text-shadow:0 0 14px #239bff61}
+.profile-card .stat span{font-size:.9rem;color:#aabbe0}
+.profile-card .pc-main>.row.gap{gap:10px}
+.profile-card .pc-main>.row.gap .btn{flex:1;min-width:0;height:54px;border-radius:28px;background:linear-gradient(135deg,#0c4170d1,#0c1637ed);border:1.5px solid #25c9ff;box-shadow:0 0 15px #23c9ff38,inset 0 1px #ffffff24}
+.profile-card .pc-main>.row.gap .btn:first-child{border-color:#a34cff;background:linear-gradient(135deg,#3e1769e6,#121239f2);box-shadow:0 0 16px #a941ff47,inset 0 1px #ffffff24}
+.profile-card .pc-main>.muted{color:#9eadd0}
+.profile-card+.verify-request-wrap .btn{border-radius:22px}
+.page:has(>.profile-card) .sec{display:flex;align-items:center;gap:10px}
+.page:has(>.profile-card) .sec:after{content:"";width:4px;height:24px;border-radius:5px;background:#35baff;box-shadow:0 0 12px #299bff}
+@media(max-width:380px){.profile-card{padding-inline:12px}.profile-card .pc-name{font-size:1.5rem}.profile-card .pc-main>.row.gap .btn{font-size:.88rem;padding-inline:10px}}
