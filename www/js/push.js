@@ -1,5 +1,5 @@
 // Push notifications (FCM via @capacitor/push-notifications). Only active inside the Android app.
-import { sb, state } from './api.js';
+import { sb, state, refreshBadges } from './api.js';
 
 const P = () => window.Capacitor?.Plugins?.PushNotifications;
 export const pushSupported = () => !!(window.Capacitor?.isNativePlatform?.() && P());
@@ -34,6 +34,8 @@ export async function initPush() {
       wired = true;
       await pn.addListener('registration', (t) => saveToken(t.value));
       await pn.addListener('registrationError', (e) => { pushStatus.error = 'فشل التسجيل في Firebase: ' + (e?.error || JSON.stringify(e)); });
+      // Foreground pushes only refresh unread counts; keep the open app silent.
+      await pn.addListener('pushNotificationReceived', () => { refreshBadges(); });
       await pn.addListener('pushNotificationActionPerformed', (a) => openFromPush(a?.notification?.data));
       try {
         await pn.createChannel({ id: 'm17_default', name: 'الإشعارات', description: 'الرسائل والمتابعات والإعجابات والتعليقات', importance: 4, visibility: 1, vibration: true });
