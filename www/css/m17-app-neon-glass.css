@@ -1,0 +1,69 @@
+/* NEXORA — full-app neon glass design system
+   Visual-only layer. Loaded after app.css and page-specific glass styles. */
+:root{
+ --bg:#030611;--bg2:#070d20;--surface:rgba(9,20,43,.88);--surface2:rgba(17,29,61,.9);
+ --line:rgba(80,169,255,.28);--text:#f2f6ff;--muted:#a2b3d5;
+ --neon:#28aaff;--cyan:#19e3ff;--violet:#a23cff;
+ --grad:linear-gradient(130deg,#17dfff 0%,#287dff 52%,#a12cff 100%);
+ --r:22px;
+}
+html,body{background:#030611}
+body{background:radial-gradient(ellipse at 4% 12%,rgba(0,164,255,.12),transparent 34%),radial-gradient(ellipse at 96% 4%,rgba(151,35,255,.15),transparent 38%),#030611}
+body::before{background:radial-gradient(900px 500px at 85% -10%,rgba(33,111,255,.2),transparent 62%),radial-gradient(700px 480px at -8% 18%,rgba(25,215,255,.12),transparent 62%),radial-gradient(700px 500px at 100% 88%,rgba(153,35,255,.12),transparent 62%)}
+.shell{background:transparent}
+.view{background:transparent}
+.page{padding-top:16px}
+.topbar{background:linear-gradient(105deg,rgba(4,15,37,.96),rgba(12,7,37,.94));border-bottom:1px solid rgba(61,174,255,.38);box-shadow:0 7px 25px rgba(0,0,0,.24),0 0 18px rgba(0,132,255,.1);backdrop-filter:blur(22px) saturate(145%);-webkit-backdrop-filter:blur(22px) saturate(145%)}
+.topbar-title{font-weight:850;text-shadow:0 0 17px rgba(94,103,255,.38)}
+.logo-text,.brand-mark{filter:drop-shadow(0 0 15px rgba(31,177,255,.42))}
+.tabbar{height:72px;bottom:calc(10px + var(--safe-b));padding:0 8px;border-radius:30px;background:linear-gradient(110deg,rgba(4,24,52,.96),rgba(10,8,39,.97));border:1px solid rgba(64,174,255,.56);backdrop-filter:blur(25px) saturate(150%);-webkit-backdrop-filter:blur(25px) saturate(150%);box-shadow:0 0 18px rgba(0,154,255,.24),0 0 22px rgba(155,35,255,.2),inset 0 1px 12px rgba(255,255,255,.07),0 12px 35px #0009}
+.tabbar .tab{color:#aab8d9}
+.tabbar .tab.on{color:#4cecff;background:radial-gradient(ellipse at 50% 0,rgba(26,214,255,.2),transparent 75%);text-shadow:0 0 12px rgba(34,215,255,.6)}
+.tabbar .tab.on::before{background:linear-gradient(90deg,transparent,#24dcff,#a53dff,transparent);box-shadow:0 0 12px #3bcfff}
+.tabbar .tab.on .ico{filter:drop-shadow(0 0 8px #22cfff)}
+.tabbar .tab-fab{background:radial-gradient(circle at 30% 20%,#8df5ff,#238cff 48%,#7d25ef 82%);color:#06122b;border:1px solid #b7f4ff;box-shadow:0 0 0 5px #050a19,0 0 22px rgba(32,192,255,.8),0 0 30px rgba(154,44,255,.55),inset 0 2px 8px #ffffffb0}
+.btn{border-radius:18px;border:1px solid rgba(119,193,255,.25);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.btn.primary{background:linear-gradient(120deg,#13cde9,#277cff 55%,#8e35f1);border-color:rgba(153,222,255,.5);box-shadow:0 6px 22px rgba(34,130,255,.3),0 0 15px rgba(135,45,255,.15),inset 0 1px 0 #ffffff55}
+.btn.ghost{background:linear-gradient(145deg,rgba(17,43,78,.75),rgba(15,12,43,.78));border:1px solid rgba(85,180,255,.36);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 #ffffff18,0 0 12px rgba(31,133,255,.1)}
+.icon-btn{border:1px solid rgba(86,177,255,.24);background:linear-gradient(145deg,rgba(18,46,83,.64),rgba(17,10,46,.7));border-radius:16px;box-shadow:inset 0 1px 0 #ffffff12}
+.input,.chat-input,.sv-reply{background:linear-gradient(145deg,rgba(9,28,57,.9),rgba(12,10,39,.88));border:1px solid rgba(73,168,255,.34);border-radius:17px;box-shadow:inset 0 1px 7px rgba(0,0,0,.24)}
+.input:focus{border-color:#27dfff;box-shadow:0 0 0 2px rgba(39,201,255,.16),0 0 17px rgba(39,169,255,.16)}
+.chip,.seg{background:linear-gradient(140deg,rgba(13,36,68,.85),rgba(17,12,46,.86));border:1px solid rgba(79,165,255,.26);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px)}
+.chip.on,.seg-btn.on{background:linear-gradient(120deg,#0ebedc,#286fff 58%,#8a35e8);color:#fff;border-color:rgba(142,213,255,.42);box-shadow:0 0 16px rgba(40,135,255,.26),inset 0 1px 0 #ffffff3b}
+.card-list,.perm-table{background:linear-gradient(145deg,rgba(9,26,54,.9),rgba(12,9,38,.92));border:1px solid rgba(77,166,255,.3);border-radius:24px;box-shadow:0 10px 28px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.05)}
+.card-list>*+*,.perm-row{border-color:rgba(89,157,255,.16)}
+.user-row{transition:background .18s,transform .18s}
+.user-row:active,.set-row:active{background:linear-gradient(90deg,rgba(21,177,255,.12),rgba(146,49,255,.12))}
+.sec{display:flex;align-items:center;gap:10px;text-shadow:0 0 12px rgba(70,142,255,.22)}
+.sec:before{content:"";width:4px;height:20px;border-radius:5px;background:linear-gradient(#20e5ff,#a338ff);box-shadow:0 0 12px rgba(47,183,255,.65)}
+.post{background:linear-gradient(145deg,rgba(10,27,56,.94),rgba(8,10,32,.97) 65%,rgba(23,9,47,.94));border:1px solid rgba(76,166,255,.34);border-radius:25px;box-shadow:0 12px 32px rgba(0,0,0,.28),0 0 15px rgba(31,135,255,.1),inset 0 1px 0 rgba(255,255,255,.06)}
+.c-body{background:linear-gradient(145deg,rgba(14,37,69,.9),rgba(15,12,43,.92));border:1px solid rgba(88,162,255,.18)}
+.story-ring{background:conic-gradient(from 200deg,#12e3ff,#337dff,#a12cff,#ed46e8,#12e3ff);filter:drop-shadow(0 0 7px rgba(58,145,255,.4))}
+.story-ring .avatar{border-color:#050a19}
+.sheet{background:linear-gradient(150deg,rgba(8,24,49,.99),rgba(8,8,31,.99) 65%,rgba(24,8,48,.99));border:1px solid rgba(73,166,255,.42);box-shadow:0 -10px 36px rgba(0,0,0,.4),0 0 25px rgba(48,130,255,.13)}
+.sheet-grip{background:linear-gradient(90deg,#20dfff,#8d35ff);box-shadow:0 0 9px rgba(55,180,255,.5)}
+.menu-item:active{background:rgba(31,152,255,.14)}
+.dialog{background:linear-gradient(145deg,#0b1c3b,#100b30);border:1px solid rgba(83,176,255,.45);box-shadow:0 15px 40px #0009,0 0 22px rgba(105,52,255,.16)}
+.toast{background:linear-gradient(135deg,rgba(11,38,72,.97),rgba(22,10,49,.97));border:1px solid rgba(69,175,255,.4);box-shadow:0 10px 30px #0009,0 0 14px rgba(43,142,255,.18)}
+.auth{max-width:460px}
+.auth-glow{background:radial-gradient(closest-side,rgba(0,190,255,.28),transparent 70%),radial-gradient(closest-side at 80% 30%,rgba(153,40,255,.24),transparent 70%)}
+.auth-form .input{min-height:50px}
+.brand .brand-mark{filter:drop-shadow(0 0 18px rgba(32,175,255,.55)) drop-shadow(0 0 26px rgba(150,47,255,.28))}
+.chat-root{background:radial-gradient(ellipse at 0 0,rgba(0,166,255,.12),transparent 42%),radial-gradient(ellipse at 100% 0,rgba(150,42,255,.12),transparent 42%),#030611}
+.chat-bar{background:linear-gradient(105deg,rgba(5,22,47,.98),rgba(12,8,39,.98));border-top:1px solid rgba(71,172,255,.4);box-shadow:0 -7px 24px rgba(0,0,0,.25)}
+.chat-input{background:rgba(9,26,55,.96);border-color:rgba(73,172,255,.42)}
+.bubble{border:1px solid rgba(112,177,255,.16);box-shadow:0 5px 16px rgba(0,0,0,.16)}
+.bubble.me{background:linear-gradient(130deg,#12bddc,#286dff 60%,#8033df);border-color:rgba(126,222,255,.35);box-shadow:0 5px 18px rgba(34,120,255,.22)}
+.bubble.them{background:linear-gradient(140deg,rgba(16,43,77,.96),rgba(19,12,48,.96));border-color:rgba(95,164,255,.28)}
+.day-sep{background:linear-gradient(100deg,rgba(12,44,75,.9),rgba(28,14,57,.9));border:1px solid rgba(83,170,255,.2)}
+.set-row{border-radius:17px;margin:3px 0}
+.set-ico{background:linear-gradient(140deg,rgba(13,183,223,.22),rgba(115,48,220,.28));border:1px solid rgba(83,190,255,.22);box-shadow:0 0 12px rgba(33,145,255,.12)}
+.switch{background:rgba(21,39,71,.9);border-color:rgba(91,167,255,.35)}
+.switch.on{background:linear-gradient(120deg,#16cde5,#337cff 55%,#9a39ed);box-shadow:0 0 14px rgba(59,157,255,.35)}
+.stat-card{background:linear-gradient(145deg,rgba(11,41,75,.86),rgba(17,12,48,.9));border-color:rgba(83,171,255,.3);box-shadow:inset 0 1px 0 #ffffff12,0 8px 22px #0004}
+.stat-card.c0,.stat-card.c1,.stat-card.c2,.stat-card.c3,.stat-card.c4,.stat-card.c5{background:linear-gradient(140deg,rgba(13,54,85,.82),rgba(23,11,54,.92))}
+.stat-card b{color:#55caff;text-shadow:0 0 15px rgba(42,160,255,.3);background:none;-webkit-text-fill-color:initial}
+.profile-card{box-shadow:0 18px 48px #0007,0 0 24px #455cff22,inset 0 1px #ffffff20}
+.empty{background:linear-gradient(145deg,rgba(9,29,57,.55),rgba(18,9,43,.58));border:1px solid rgba(75,163,255,.2);border-radius:24px}
+@media(max-width:380px){.page{padding-inline:11px}.tabbar{inset-inline:8px}.tab{min-width:48px}}
+@media(prefers-reduced-motion:reduce){.user-row,.set-row{transition:none}}
