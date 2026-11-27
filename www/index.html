@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#060b1a">
 <title>NEXORA</title>
-<link rel="stylesheet" href="css/app.css">\n<link rel="stylesheet" href="css/m17-glass-buttons.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/m17-glass-buttons.css">
+<link rel="stylesheet" href="css/m17-profile-glass.css">
 </head>
 <body>
 <div id="splash"><img class="brand-logo" src="logo.png" alt="NEXORA"></div>
 <div id="root"></div>
 <script>
-// startup watchdog: never leave the user on a blank/stuck splash
 window.__errs=[];window.addEventListener('error',function(e){window.__errs.push(e.message||String(e.error))});window.addEventListener('unhandledrejection',function(e){window.__errs.push(String(e.reason&&e.reason.message||e.reason))});
 setTimeout(function(){var sp=document.getElementById('splash');if(!sp)return;var d=document.createElement('div');d.style.cssText='position:absolute;bottom:60px;left:20px;right:20px;text-align:center;color:#fff;font:14px system-ui';d.innerHTML='<p>يتأخر فتح التطبيق… تحقق من الإنترنت</p><p dir="ltr" style="opacity:.6;font-size:12px"></p><button style="padding:10px 22px;border-radius:20px;border:0;background:#2f7cff;color:#fff;font-size:15px">إعادة المحاولة</button>';d.querySelector('p[dir]').textContent=window.__errs.slice(0,2).join(' | ');d.querySelector('button').onclick=function(){location.reload()};sp.appendChild(d)},9000);
 </script>
