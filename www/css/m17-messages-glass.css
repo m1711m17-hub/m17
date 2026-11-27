@@ -1,0 +1,25 @@
+/* NEXORA — glass neon messages screen, visual-only */
+.messages-page{position:relative;isolation:isolate;overflow:hidden}
+.messages-page::before{content:"";position:absolute;z-index:-1;pointer-events:none;inset:0 0 auto;height:310px;background:
+ radial-gradient(ellipse at 18% 72%,rgba(0,198,255,.25),transparent 42%),
+ radial-gradient(ellipse at 78% 12%,rgba(157,35,255,.28),transparent 48%),
+ linear-gradient(145deg,rgba(5,13,35,.98),rgba(4,7,23,.72) 58%,transparent)}
+.messages-page .topbar{background:linear-gradient(100deg,rgba(4,12,31,.96),rgba(11,7,35,.9));border-bottom:1px solid rgba(48,187,255,.38);box-shadow:0 5px 28px rgba(0,0,0,.32),0 1px 18px rgba(20,139,255,.12)}
+.messages-page .topbar-title{font-size:1.55rem;font-weight:850;text-shadow:0 0 18px rgba(126,65,255,.6)}
+.messages-page .topbar .icon-btn{width:46px;height:46px;border-radius:17px;background:linear-gradient(145deg,rgba(13,40,83,.86),rgba(14,8,42,.92));border:1px solid rgba(70,170,255,.48);box-shadow:inset 0 1px 8px rgba(255,255,255,.07),0 0 14px rgba(23,131,255,.2),0 0 12px rgba(155,35,255,.12);color:#eaf5ff}
+.messages-page .topbar .icon-btn:active{box-shadow:0 0 18px rgba(30,209,255,.55)}
+.messages-page .page{padding-top:18px}
+.messages-page .card-list{display:flex;flex-direction:column;gap:9px;background:transparent;border:0;border-radius:0;overflow:visible}
+.messages-page .card-list>*+*{border-top:0}
+.messages-page .user-row.conv{position:relative;isolation:isolate;min-height:91px;padding:13px 15px;border-radius:27px;border:1px solid rgba(72,171,255,.52);background:linear-gradient(112deg,rgba(5,22,48,.94),rgba(5,10,28,.97) 53%,rgba(18,8,43,.94));box-shadow:inset 0 1px 10px rgba(255,255,255,.055),inset 0 -8px 20px rgba(3,8,24,.55),0 0 12px rgba(0,153,255,.17),4px 0 17px rgba(157,32,255,.17);transition:transform .18s,border-color .18s,box-shadow .18s}
+.messages-page .user-row.conv::after{content:"›";position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);font-size:30px;line-height:1;color:#a52cff;text-shadow:0 0 12px #9b2cff;pointer-events:none}
+.messages-page .user-row.conv:active{transform:scale(.985);border-color:#28dfff;box-shadow:0 0 20px rgba(27,198,255,.38),0 0 22px rgba(164,45,255,.22)}
+.messages-page .user-row.conv .av-wrap{margin-inline-end:4px}
+.messages-page .user-row.conv .avatar{width:58px!important;height:58px!important;border:1px solid rgba(110,200,255,.55);box-shadow:0 0 12px rgba(25,160,255,.25)}
+.messages-page .user-row.conv .grow{padding-inline:3px 20px}
+.messages-page .user-row.conv .grow b{font-size:1.02rem;color:#fff}
+.messages-page .user-row.conv .muted{color:#a9badc}
+.messages-page .user-row.conv .pill{background:linear-gradient(135deg,#12dfff,#723cff 70%,#df28ff);box-shadow:0 0 15px rgba(139,55,255,.72);min-width:25px;height:25px}
+.messages-page .user-row.conv .online-dot{box-shadow:0 0 0 2px #071126,0 0 12px #24e6ff}
+.messages-page .empty{background:linear-gradient(140deg,rgba(8,28,58,.8),rgba(20,8,46,.78));border:1px solid rgba(71,170,255,.35);border-radius:26px;box-shadow:0 0 22px rgba(40,123,255,.16)}
+.messages-page .tabbar{background:linear-gradient(110deg,rgba(5,22,48,.94),rgba(10,8,39,.96));border-color:rgba(60,174,255,.48);box-shadow:0 0 18px rgba(0,156,255,.2),0 0 20px rgba(147,39,255,.16),inset 0 1px 12px rgba(255,255,255,.06)}
