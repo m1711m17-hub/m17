@@ -4,11 +4,11 @@ body.video-post-open .shell>.tabbar,body.video-post-open .tabbar{display:none!im
 body.video-post-open .view{position:fixed;inset:0;z-index:80;padding:0!important;margin:0!important;overflow:hidden;background:#000}
 .video-detail-page{position:fixed!important;inset:0!important;width:100%;height:100dvh;max-width:none!important;margin:0!important;padding:0!important;background:#000!important;overflow:hidden!important}
 .video-post-card{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;border:0!important;border-radius:0!important;background:#000!important;overflow:hidden!important}
-.video-post-card .p-head{position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 10px);left:58px;right:58px;background:transparent!important;border:0!important}
+.video-post-card .p-head{display:none!important;position:absolute;z-index:3;top:calc(env(safe-area-inset-top) + 10px);left:58px;right:58px;background:transparent!important;border:0!important}
 .video-post-card .p-head .p-name,.video-post-card .p-head .muted{color:#fff!important;text-shadow:0 1px 5px #000}
 .video-post-card .p-head .icon-btn{display:none!important}
 .video-post-card .p-media{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important;background:#000!important;border-radius:0!important}
-.video-post-card .p-body{position:absolute!important;z-index:3;bottom:calc(env(safe-area-inset-bottom) + 26px);left:18px;right:86px;color:#fff!important;background:linear-gradient(transparent,#0008)!important;padding:24px 0 12px!important;text-shadow:0 1px 5px #000;max-height:24vh;overflow:auto}
+.video-post-card .p-body{display:none!important;position:absolute!important;z-index:3;bottom:calc(env(safe-area-inset-bottom) + 26px);left:18px;right:86px;color:#fff!important;background:linear-gradient(transparent,#0008)!important;padding:24px 0 12px!important;text-shadow:0 1px 5px #000;max-height:24vh;overflow:auto}
 .video-post-card .p-actions{position:absolute!important;z-index:4;right:12px;bottom:calc(env(safe-area-inset-bottom) + 95px);display:flex!important;flex-direction:column!important;gap:18px!important;background:transparent!important;border:0!important;padding:0!important}
 .video-post-card .p-actions .act{display:flex;flex-direction:column;align-items:center;gap:3px;color:#fff!important;text-shadow:0 1px 5px #000;background:#07101b66!important;border-radius:24px;padding:8px 7px!important}
 .video-post-card .p-actions .act span{font-size:11px}
