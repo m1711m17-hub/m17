@@ -38,6 +38,7 @@ function bodyParts(text) {
   return out;
 }
 export async function messagesPage(root) {
+  root.classList.add('messages-page');
   const list = h('div', { class: 'card-list' });
   const newBtn = h('button', { class: 'icon-btn', 'aria-label': 'محادثة جديدة', onclick: newChat }, icon('edit', 22));
   const logBtn = h('button', { class: 'icon-btn', 'aria-label': 'سجل المكالمات', onclick: () => (location.hash = '#/calls') }, icon('phone', 22));
@@ -84,7 +85,7 @@ export async function messagesPage(root) {
   let t = null; const soon = () => { clearTimeout(t); t = setTimeout(load, 350); };
   ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.addEventListener(e, soon));
   const iv = setInterval(() => { if (!document.hidden && !rtLive()) load(); }, 6000);
-  return () => { unwatchList(); clearInterval(iv); clearTimeout(t); ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.removeEventListener(e, soon)); };
+  return () => { unwatchList(); clearInterval(iv); clearTimeout(t); ['rt:message', 'rt:message-update', 'rt:ready', 'm17:resume'].forEach((e) => bus.removeEventListener(e, soon)); root.classList.remove('messages-page'); };
 }
 
 export async function chatPage(root, params) {
