@@ -62,7 +62,28 @@ export async function renderComments(container, postId, onCount) {
   container.append(list, h('div', { class: 'composer-row' }, avatar(state.me, 36), input, sendBtn));
   try { await load(); } catch (e) { list.append(h('div', { class: 'empty small' }, e.message)); }
 }
-export function openComments(post, onCount) { sheet('التعليقات', (body) => renderComments(body, post.id, onCount), { full: true }); }
+export function openComments(post, onCount) {
+  sheet('التعليقات', async (body) => {
+    await renderComments(body, post.id, onCount);
+    const composer = body.querySelector('.composer-row');
+    const input = composer?.querySelector('input');
+    if (!composer || !input) return;
+    const add = (value) => {
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + value + input.value.slice(end);
+      input.focus();
+      input.setSelectionRange(start + value.length, start + value.length);
+    };
+    const emojiTray = h('div', { class: 'comment-emoji-tray' },
+      ...['❤️','😂','😍','🔥','👏','🥰','😢','👍','🤩','🙏'].map((emoji) =>
+        h('button', { type: 'button', 'aria-label': emoji, onclick: () => add(emoji) }, emoji)));
+    const stickerTray = h('div', { class: 'comment-sticker-tray' },
+      ...['💖','🐱','🌹','🤣','🫶'].map((sticker) =>
+        h('button', { type: 'button', 'aria-label': 'ملصق ' + sticker, onclick: () => add(sticker + ' ') }, sticker)));
+    composer.before(emojiTray, stickerTray);
+  }, { full: true });
+}
 
 // ---------------- post card ----------------
 export function postCard(post, { onDeleted, detail = false } = {}) {
