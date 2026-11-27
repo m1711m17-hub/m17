@@ -72,6 +72,9 @@ jobs:
           fi
           echo "$NEXORA_KEYSTORE_B64" | base64 --decode > /tmp/nexora-release.jks
           test -s /tmp/nexora-release.jks
+          echo "DIAG jks sha256: $(sha256sum /tmp/nexora-release.jks | cut -c1-16) size: $(stat -c%s /tmp/nexora-release.jks)"
+          echo "DIAG storepass len: ${#NEXORA_KEYSTORE_PASSWORD} keypass len: ${#NEXORA_KEY_PASSWORD} alias len: ${#NEXORA_KEY_ALIAS}"
+          keytool -list -keystore /tmp/nexora-release.jks -storepass "$NEXORA_KEYSTORE_PASSWORD" >/dev/null 2>&1 && echo "DIAG storepass OK" || echo "DIAG storepass BAD"
           cat >> android/app/build.gradle <<'GRADLE'
           android {
             signingConfigs {
