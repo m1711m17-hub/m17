@@ -1,0 +1,64 @@
+/* TikTok-style video gallery — profile page only */
+.page:has(>.profile-card) .profile-video-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;
+  margin:10px 0 22px;
+}
+.page:has(>.profile-card) .profile-video-tile{
+  position:relative;
+  display:block;
+  width:100%;
+  aspect-ratio:9/16;
+  min-width:0;
+  overflow:hidden;
+  padding:0;
+  border:1px solid rgba(112,164,255,.2);
+  border-radius:9px;
+  background:linear-gradient(145deg,#101d39,#080d1b);
+  box-shadow:0 3px 12px #0005;
+  cursor:pointer;
+}
+.page:has(>.profile-card) .profile-video-tile video{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  background:#080d1b;
+}
+.page:has(>.profile-card) .profile-video-play{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  background:linear-gradient(180deg,#0002,transparent 42%,#0007);
+  text-shadow:0 2px 12px #000;
+  pointer-events:none;
+}
+.page:has(>.profile-card) .profile-video-play svg{
+  width:38px;
+  height:38px;
+  padding:8px;
+  border:1px solid #ffffffa6;
+  border-radius:50%;
+  background:#07142c88;
+  box-shadow:0 0 16px #2b9dff80;
+}
+.page:has(>.profile-card) .profile-video-caption{
+  position:absolute;
+  inset:auto 7px 7px;
+  overflow:hidden;
+  color:#fff;
+  font-size:.72rem;
+  line-height:1.35;
+  text-align:right;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  text-shadow:0 1px 5px #000;
+  pointer-events:none;
+}
+@media(min-width:700px){
+  .page:has(>.profile-card) .profile-video-grid{gap:7px}
+  .page:has(>.profile-card) .profile-video-tile{border-radius:13px}
+}
