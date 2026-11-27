@@ -1,0 +1,75 @@
+/* M17 / NEXORA — Glass navigation + buttons override
+   Loaded after app.css. RTL-safe; visual-only overrides. */
+:root{
+  --glass-bg:rgba(18,24,39,.72);
+  --glass-line:rgba(225,239,255,.24);
+  --glass-glow:rgba(65,235,213,.38);
+}
+.tabbar{
+  height:68px;
+  inset-inline:12px;
+  bottom:calc(10px + var(--safe-b));
+  padding:0 9px;
+  border-radius:28px;
+  background:linear-gradient(180deg,rgba(35,43,59,.76),rgba(12,19,34,.86));
+  border:1px solid var(--glass-line);
+  backdrop-filter:blur(24px) saturate(145%);
+  -webkit-backdrop-filter:blur(24px) saturate(145%);
+  box-shadow:0 12px 34px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.05);
+}
+.tabbar .tab{
+  position:relative;min-width:0;flex:1;height:54px;justify-content:center;gap:3px;
+  border-radius:20px;color:rgba(222,232,248,.72);
+  transition:color .22s ease,transform .22s ease,background .22s ease;
+}
+.tabbar .tab .ico{width:21px;height:21px}
+.tabbar .tab.on{
+  color:#8fffee;
+  background:radial-gradient(ellipse at 50% 0%,rgba(75,245,218,.22),transparent 72%);
+  text-shadow:0 0 12px rgba(72,245,220,.45);
+}
+.tabbar .tab.on::before{
+  content:"";position:absolute;top:1px;left:22%;right:22%;height:2px;border-radius:4px;
+  background:linear-gradient(90deg,transparent,#73ffe5,transparent);
+  box-shadow:0 0 11px rgba(90,255,225,.9);
+}
+.tabbar .tab.on .ico{filter:drop-shadow(0 0 7px rgba(93,255,225,.75))}
+.tabbar .tab:active{transform:scale(.94)}
+.tabbar .tab-fab{
+  position:relative;flex:0 0 54px;width:54px;height:54px;margin:-24px 5px 0;
+  border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(91,255,229,.95),rgba(37,130,255,.96));
+  color:#041522;border:1px solid rgba(220,255,250,.72);
+  box-shadow:0 7px 22px rgba(39,180,255,.36),0 0 0 5px rgba(5,9,20,.94),0 0 22px rgba(80,255,225,.25),inset 0 1px 2px rgba(255,255,255,.7);
+  font-size:.66rem;font-weight:900;letter-spacing:.5px;
+}
+.tabbar .tab-fab:active{transform:scale(.91)}
+.tabbar .tab-fab .fab-dot{
+  position:absolute;width:7px;height:7px;top:10px;right:11px;border-radius:50%;
+  background:#fff;box-shadow:0 0 8px #fff;
+}
+.btn{border-radius:17px;border:1px solid rgba(210,230,255,.16);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.btn.primary{
+  background:linear-gradient(135deg,#36d9ee 0%,#287dff 58%,#6656e8 100%);
+  border-color:rgba(190,245,255,.34);
+  box-shadow:0 7px 22px rgba(35,126,255,.28),inset 0 1px 0 rgba(255,255,255,.24);
+}
+.btn.ghost{
+  background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025));
+  border:1px solid rgba(210,230,255,.22);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
+}
+.icon-btn{
+  border:1px solid rgba(210,230,255,.12);background:rgba(255,255,255,.045);
+  border-radius:15px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.icon-btn:active,.btn:active{transform:scale(.95);filter:brightness(1.12)}
+.chip,.seg{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.chip.on{
+  background:linear-gradient(135deg,rgba(49,218,220,.92),rgba(43,111,255,.96));
+  box-shadow:0 4px 17px rgba(42,172,255,.28),inset 0 1px 0 rgba(255,255,255,.24);
+}
+@media (prefers-reduced-motion:reduce){
+  .tabbar .tab,.tabbar .tab-fab,.btn,.icon-btn{transition:none}
+}
