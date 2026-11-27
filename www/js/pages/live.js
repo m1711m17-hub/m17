@@ -150,7 +150,7 @@ function renderVoice(ctx, W, H) {
     const who = i === 0 ? { bmp: voiceAv, n: state.me?.display_name || state.me?.username } : voiceGuests[i - 1];
     ctx.save(); ctx.beginPath(); ctx.arc(x, y, d / 2, 0, 7); ctx.clip();
     if (who?.bmp) { const k = Math.max(d / who.bmp.width, d / who.bmp.height); ctx.drawImage(who.bmp, x - who.bmp.width * k / 2, y - who.bmp.height * k / 2, who.bmp.width * k, who.bmp.height * k); }
-    else if (who) { const g = ctx.createLinearGradient(x - d / 2, y - d / 2, x + d / 2, y + d / 2); g.addColorStop(0, '#00c6ff'); g.addColorStop(1, '#7b5cff'); ctx.fillStyle = g; ctx.fillRect(x - d / 2, y - d / 2, d, d); ctx.fillStyle = '#fff'; ctx.font = `bold ${d * 0.45}system-ui, 'Noto Sans Arabic', Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(initial(who.n), x, y + 2); }
+    else if (who) { const g = ctx.createLinearGradient(x - d / 2, y - d / 2, x + d / 2, y + d / 2); g.addColorStop(0, '#00c6ff'); g.addColorStop(1, '#7b5cff'); ctx.fillStyle = g; ctx.fillRect(x - d / 2, y - d / 2, d, d); ctx.fillStyle = '#fff'; ctx.font = `bold ${d * 0.45}px system-ui, 'Noto Sans Arabic', Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(initial(who.n), x, y + 2); }
     else { ctx.fillStyle = '#2a2a2a'; ctx.fillRect(x - d / 2, y - d / 2, d, d); ctx.fillStyle = '#4d4d4d'; ctx.beginPath(); ctx.arc(x, y - d * 0.1, d * 0.17, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(x, y + d * 0.42, d * 0.34, d * 0.3, 0, 0, 7); ctx.fill(); }
     ctx.restore();
   }
