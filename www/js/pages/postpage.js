@@ -1,6 +1,6 @@
 import { h, icon, avatar, clear } from '../lib/dom.js';
 import { enrichPosts } from '../api.js';
-import { postCard, openComments, fetchPostById } from './postcard.js';
+import { postCard, fetchPostById } from './postcard.js';
 
 export async function postPage(root, params) {
   const box = h('div', { class: 'page video-detail-page' }, h('div', { class: 'skeleton post-sk' }));
@@ -40,8 +40,6 @@ export async function postPage(root, params) {
       else { video.pause(); tap.innerHTML = ''; tap.append(icon('play', 28)); }
     } }, icon('pause', 28));
     card.append(back, sound, tap, meta);
-    const commentBtn = [...card.querySelectorAll('.p-actions button')][1];
-    if (commentBtn) commentBtn.addEventListener('click', () => openComments(p));
     box.append(card);
     return () => { document.body.classList.remove('video-post-open'); try { video?.pause(); } catch {} };
   }
