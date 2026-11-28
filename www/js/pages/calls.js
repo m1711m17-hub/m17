@@ -321,6 +321,15 @@ async function checkIncoming() {
 }
 export function initCalls() {
   if (wired) return; wired = true;
+  // Android 14+ may silently downgrade full-screen call notifications unless the user grants this special access.
+  try {
+    const access = window.Capacitor?.Plugins?.IncomingCallAccess;
+    if (window.Capacitor?.isNativePlatform?.() && access?.checkAndRequest) {
+      access.checkAndRequest().then((r) => {
+        if (r?.allowed === false) console.warn('[NEXORA calls] Enable full-screen notifications in Android settings to show incoming calls over other apps.');
+      }).catch((e) => console.warn('[NEXORA calls] Full-screen access check failed', e));
+    }
+  } catch (e) { console.warn('[NEXORA calls] Full-screen access check failed', e); }
   bus.addEventListener('rt:call', (e) => onIncoming(e.detail));
   bus.addEventListener('rt:call-update', (e) => onCallUpdate(e.detail));
   bus.addEventListener('rt:signal', (e) => onSignal(e.detail));
