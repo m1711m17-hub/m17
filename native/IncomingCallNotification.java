@@ -1,5 +1,6 @@
 package com.m17.social;
 
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -21,6 +22,14 @@ public final class IncomingCallNotification {
         if (!"call".equals(data.get("type"))) return;
         String callId = data.get("call_id");
         if (callId == null || callId.isEmpty()) return;
+
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (activityManager != null) {
+            for (ActivityManager.RunningAppProcessInfo process : activityManager.getRunningAppProcesses()) {
+                if (context.getPackageName().equals(process.processName)
+                    && process.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return;
+            }
+        }
 
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
@@ -61,9 +70,9 @@ public final class IncomingCallNotification {
             .setOngoing(true)
             .setAutoCancel(true)
             .setShowWhen(true)
-            .setTimeoutAfter(46000)
             .setContentIntent(content)
             .setFullScreenIntent(content, true);
+        if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter(46000);
 
         Notification notification = builder.build();
         if (Build.VERSION.SDK_INT >= 21) notification.flags |= Notification.FLAG_INSISTENT;
