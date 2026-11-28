@@ -305,7 +305,7 @@ export async function chatPage(root, params) {
       if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
       if (m.body) kids.push(h('div', { class: 'b-text' }, ...bodyParts(m.body)));
     }
-    kids.push(h('div', { class: 'b-meta' }, pending ? '…' : hhmm(m.created_at), mine && m.read_at ? ' ✓✓' : ''));
+    kids.push(h('div', { class: 'b-meta' }, pending ? '…' : hhmm(m.created_at), mine ? (m.read_at ? ' ✓✓' : m.delivered_at ? ' ✓' : '') : ''));
     return h('div', { class: 'bubble ' + (mine ? 'me' : 'them') + (call ? ' call-event' : '') + (m.sticker ? ' bare' : '') + (m.audio_url ? ' has-voice' : '') + (pending ? ' pending' : ''), 'data-id': m.id }, ...kids);
   }
 
@@ -443,7 +443,7 @@ export async function chatPage(root, params) {
     const near = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 160;
     let added = false;
     for (const m of rows) {
-      if (seen.has(m.id)) { const old = seen.get(m.id); if (m.deleted_all && !old.deleted_all) { markDeleted(m); continue; } if (!old.read_at && m.read_at) { old.read_at = m.read_at; const el = msgs.querySelector(`[data-id="${m.id}"] .b-meta`); if (el) el.textContent = hhmm(m.created_at) + ' ✓✓'; } continue; }
+      if (seen.has(m.id)) { const old = seen.get(m.id); if (m.deleted_all && !old.deleted_all) { markDeleted(m); continue; } if ((!old.delivered_at && m.delivered_at) || (!old.read_at && m.read_at)) { old.delivered_at = m.delivered_at || old.delivered_at; old.read_at = m.read_at || old.read_at; const el = msgs.querySelector(`[data-id="${m.id}"] .b-meta`); if (el) el.textContent = hhmm(m.created_at) + (old.read_at ? ' ✓✓' : old.delivered_at ? ' ✓' : ''); } continue; }
       seen.set(m.id, m); added = true;
       msgs.querySelectorAll('.pending').forEach((p) => p.remove());
       const d = dayLabel(m.created_at);
@@ -454,7 +454,12 @@ export async function chatPage(root, params) {
     if (rows.some((r) => r.reply_to)) fillQuotes(rows);
   }
   async function markRead() {
-    try { await sb.from('messages').update({ read_at: new Date().toISOString() }).eq('sender_id', peer.id).eq('receiver_id', state.me.id).is('read_at', 'null'); refreshBadges(); } catch {}
+    try { const now = new Date().toISOString(); await sb.from('messages').update({ read_at: now, delivered_at: now }).eq('sender_id', peer.id).eq('receiver_id', state.me.id).is('read_at', 'null'); refreshBadges(); } catch {}
+  }
+  async function markDelivered(rows) {
+    const ids = rows.filter((m) => m.receiver_id === state.me.id && !m.delivered_at).map((m) => m.id);
+    if (!ids.length) return;
+    try { await sb.from('messages').update({ delivered_at: new Date().toISOString() }).in('id', ids).is('delivered_at', 'null'); } catch {}
   }
   async function poll() {
     if (stop || busy) return; busy = true;
@@ -462,6 +467,7 @@ export async function chatPage(root, params) {
       const me = state.me.id;
       const rows = await sb.from('messages').select('*').or(`and(sender_id.eq.${me},receiver_id.eq.${peer.id}),and(sender_id.eq.${peer.id},receiver_id.eq.${me})`).order('created_at', { ascending: false }).limit(60);
       addMsgs(rows.reverse());
+      await markDelivered(rows);
       if (rows.some((m) => m.receiver_id === me && !m.read_at)) await markRead();
       if (!rtLive()) { const k = await sb.rpc('get_chat_status', { peer: peer.id }).catch(() => null); if (k) setPeerKind(k); }
     } catch { /* keep going */ } finally { busy = false; }
