@@ -319,6 +319,21 @@ async function checkIncoming() {
   if (!state.me || cur) return;
   try { const rows = await sb.from('calls').select('*').eq('callee_id', state.me.id).eq('status', 'ringing').gte('created_at', new Date(Date.now() - 44000).toISOString()).order('created_at', { ascending: false }).limit(1); if (rows[0]) onIncoming(rows[0]); } catch {}
 }
+async function recoverNativeIncomingCall() {
+  try {
+    const access = window.Capacitor?.Plugins?.IncomingCallAccess;
+    if (!window.Capacitor?.isNativePlatform?.() || !access?.getPendingCall || !state.me?.id) return;
+    const pending = await access.getPendingCall();
+    if (!pending?.callId) return;
+    const call = await sb.from('calls').select('*').eq('id', pending.callId).eq('callee_id', state.me.id).one();
+    if (call?.status === 'ringing') await onIncoming(call);
+    else checkIncoming();
+  } catch (e) {
+    console.warn('[NEXORA calls] Native incoming-call recovery failed', e);
+    checkIncoming();
+  }
+}
+
 export function initCalls() {
   if (wired) return; wired = true;
   // Android 14+ may silently downgrade full-screen call notifications unless the user grants this special access.
@@ -339,6 +354,9 @@ export function initCalls() {
   // Without this fallback the caller stays on “calling” forever on the callee device.
   ivCheck = setInterval(() => { if (!document.hidden) checkIncoming(); }, 3000);
   checkIncoming();
+  // If Android opened the activity from a full-screen call notification while the
+  // process was stopped, recover that exact call instead of relying only on polling.
+  recoverNativeIncomingCall();
 }
 export function stopCalls() { if (cur) hangup(cur); }
 
