@@ -43,7 +43,13 @@ export async function messagesPage(root) {
   const newBtn = h('button', { class: 'icon-btn', 'aria-label': 'محادثة جديدة', onclick: newChat }, icon('edit', 22));
   const logBtn = h('button', { class: 'icon-btn', 'aria-label': 'سجل المكالمات', onclick: () => (location.hash = '#/calls') }, icon('phone', 22));
   const groupsBtn = h('button', { class: 'icon-btn', 'aria-label': 'المجموعات', onclick: () => (location.hash = '#/groups') }, icon('users', 22));
-  root.append(headerBar('الرسائل', { right: [groupsBtn, logBtn, newBtn, bellButton()] }), h('div', { class: 'page' }, list));
+  const aiRow = h('a', { class: 'user-row conv ai-conv', href: '#/ai' },
+    h('span', { class: 'ai-chat-avatar' }, icon('sparkles', 25)),
+    h('div', { class: 'grow' },
+      h('div', { class: 'row between' }, h('b', null, 'مساعد الأعمال'), h('span', { class: 'ai-chat-tag' }, 'AI')),
+      h('div', { class: 'row between' }, h('span', { class: 'muted ellipsis' }, 'أهلاً! أنا مساعدك الذكي، كيف أساعدك؟'), h('span', { class: 'muted small' }, ''))));
+  const aiFab = h('a', { class: 'ai-list-fab', href: '#/ai', 'aria-label': 'افتح مساعد NEXORA', title: 'NEXORA AI' }, icon('sparkles', 25));
+  root.append(headerBar('الرسائل', { right: [groupsBtn, logBtn, newBtn, bellButton()] }), h('div', { class: 'page' }, aiRow, list), aiFab);
 
   function newChat() {
     sheet('محادثة جديدة', (body, close) => {

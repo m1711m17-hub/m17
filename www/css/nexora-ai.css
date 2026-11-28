@@ -15,3 +15,11 @@
 .ai-thinking{align-self:flex-start;display:flex;align-items:center;gap:5px;color:var(--muted);font-size:.8rem;padding:10px 14px}.ai-thinking i{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:aiPulse .8s infinite alternate}.ai-thinking i:nth-child(2){animation-delay:.2s}.ai-thinking i:nth-child(3){animation-delay:.4s}
 @keyframes aiPulse{to{opacity:.25;transform:translateY(-3px)}}
 @media(max-width:390px){.ai-feed{max-height:calc(100dvh - 340px)}.ai-message{max-width:94%}}
+
+/* AI entry in conversations list — WhatsApp-inspired placement */
+.ai-conv{background:linear-gradient(100deg,rgba(43,20,83,.24),rgba(16,25,49,.12));border-bottom:1px solid rgba(169,103,255,.13)}
+.ai-chat-avatar{width:52px;height:52px;flex:none;border-radius:50%;display:grid;place-items:center;color:#fff;background:radial-gradient(circle at 35% 25%,#f0a8ff,#a33dff 48%,#5423a8);box-shadow:0 0 18px rgba(168,75,255,.38),inset 0 1px 5px #fff7}
+.ai-chat-tag{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:#d5a0ff;background:rgba(150,70,255,.16);border:1px solid rgba(190,125,255,.25);padding:3px 8px;border-radius:20px}
+.ai-list-fab{position:fixed;z-index:45;inset-inline-start:18px;bottom:calc(88px + var(--safe-b));width:58px;height:58px;border-radius:19px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#bd69ff,#7825d5 70%,#4d1d9b);border:1px solid rgba(235,195,255,.35);box-shadow:0 7px 24px rgba(126,40,218,.48),inset 0 1px 5px #fff5;transition:transform .18s,box-shadow .18s}
+.ai-list-fab:active{transform:scale(.92);box-shadow:0 3px 12px rgba(126,40,218,.35)}
+.ai-list-fab .ico{filter:drop-shadow(0 1px 5px #fff7)}
