@@ -116,7 +116,14 @@ jobs:
         run: |
           ./gradlew assembleRelease
           cp app/build/outputs/apk/release/app-release.apk ../NEXORA.apk
-          $ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner verify --verbose ../NEXORA.apk
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/apksigner" verify --verbose --print-certs ../NEXORA.apk
+          "$BT/zipalign" -c -v 4 ../NEXORA.apk
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id ../NEXORA.apk | grep -Fx "com.m17.social"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest min-sdk ../NEXORA.apk
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest target-sdk ../NEXORA.apk
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest version-code ../NEXORA.apk
+          test "$(stat -c%s ../NEXORA.apk)" -gt 1000000
       - uses: actions/upload-artifact@v4
         with:
           name: NEXORA-apk
