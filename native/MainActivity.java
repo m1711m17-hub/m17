@@ -18,7 +18,6 @@ public class MainActivity extends BridgeActivity {
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             );
         }
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
