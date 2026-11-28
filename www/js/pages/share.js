@@ -11,7 +11,9 @@ function hideReel(id) { try { const s = hiddenReels(); s.add(id); localStorage.s
 // TikTok-style share sheet: people (in-app DM) / apps / actions.
 export function sharePostSheet(post, { onShared, onHidden } = {}) {
   const a = post.author || {};
-  // Use the actual public media URL as the share target. This opens the video directly\n  // in a browser/player and avoids copying an app-only deep link or promotional text.\n  const shareUrl = post.media_url || APK;\n  const text = `شاهد ${post.media_type === 'video' ? 'هذا الفيديو' : 'هذا المنشور'} على NEXORA من @${a.username || ''}` + (post.body ? `\\n«${post.body.slice(0, 120)}»` : '') + `\\n${shareUrl}`;
+  // Share the public media URL so it opens directly in a browser or media player.
+  const shareUrl = post.media_url || APK;
+  const text = `شاهد ${post.media_type === 'video' ? 'هذا الفيديو' : 'هذا المنشور'} على NEXORA من @${a.username || ''}` + (post.body ? `\n«${post.body.slice(0, 120)}»` : '') + `\n${shareUrl}`;
   let counted = post.shared;
   const count = async () => { if (counted) return; counted = true; try { await sb.from('shares').insert({ post_id: post.id, user_id: state.me.id }); post.shared = true; post.nShares++; onShared?.(); } catch {} };
 
@@ -60,7 +62,7 @@ export function sharePostSheet(post, { onShared, onHidden } = {}) {
       app('رسالة SMS', icon('comment', 26), 'sms', () => { location.href = 'sms:?body=' + enc(text); }),
       app('البريد', icon('mail', 26), 'mail', () => { location.href = 'mailto:?subject=' + enc('NEXORA') + '&body=' + enc(text); }),
       app('نسخ الرابط', icon('link', 26), 'copy', async () => { try { await navigator.clipboard.writeText(shareUrl); toast('تم نسخ رابط الفيديو', 'ok'); } catch { try { const input = h('textarea', { readonly: true, value: shareUrl }); document.body.append(input); input.select(); document.execCommand('copy'); input.remove(); toast('تم نسخ رابط الفيديو', 'ok'); } catch { toast('تعذّر النسخ', 'err'); } } }),
-      app('المزيد', icon('more', 26), 'more', () => { if (navigator.share) navigator.share({ title: 'NEXORA', text: text.split('\\n')[0], url: shareUrl }).catch(() => {}); else toast('المشاركة غير مدعومة على هذا الجهاز'); }));
+      app('المزيد', icon('more', 26), 'more', () => { if (navigator.share) navigator.share({ title: 'NEXORA', text: text.split('\n')[0], url: shareUrl }).catch(() => {}); else toast('المشاركة غير مدعومة على هذا الجهاز'); }));
 
     const act = (label, ic, fn) => h('button', { class: 'share-item', type: 'button', onclick: fn }, h('span', { class: 'share-ic act' }, ic), h('span', { class: 'share-name' }, label));
     const actions = h('div', { class: 'share-row actions' },
