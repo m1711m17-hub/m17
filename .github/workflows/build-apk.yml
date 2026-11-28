@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
+      - name: Enable native incoming-call notifications
+        run: node native/patch-push-service.mjs
       - name: Add Android platform
         run: npx cap add android
       - name: Firebase config + manifest permissions
@@ -26,7 +28,7 @@ jobs:
             echo "::warning::firebase/google-services.json missing - push notifications disabled in this build"
           fi
           M=android/app/src/main/AndroidManifest.xml
-          for P in POST_NOTIFICATIONS CAMERA RECORD_AUDIO MODIFY_AUDIO_SETTINGS; do
+          for P in POST_NOTIFICATIONS CAMERA RECORD_AUDIO MODIFY_AUDIO_SETTINGS USE_FULL_SCREEN_INTENT VIBRATE; do
             grep -q "android.permission.$P" $M || sed -i "/android.permission.INTERNET/a\\    <uses-permission android:name=\"android.permission.$P\" />" $M
           done
           grep -n "uses-permission" $M
