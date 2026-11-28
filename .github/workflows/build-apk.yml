@@ -53,7 +53,8 @@ jobs:
       - name: Native plugins (audio route, notification sounds, update opener)
         run: |
           D=android/app/src/main/java/com/m17/social
-          mkdir -p $D && cp native/*.java $D/
+          mkdir -p $D
+          for F in native/*.java; do [ "$(basename "$F")" = "IncomingCallNotification.java" ] || cp "$F" "$D/"; done
           ls $D
       - name: Version stamp (so installed apps can detect newer builds)
         run: |
