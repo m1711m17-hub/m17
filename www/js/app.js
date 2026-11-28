@@ -18,6 +18,7 @@ import { postPage } from './pages/postpage.js';
 import { callsPage, initCalls, stopCalls, inCall } from './pages/calls.js';
 import { openLive, endLiveOnExit, initInvites } from './pages/live.js';
 import { checkForUpdates } from './update.js';
+import { storePage } from './pages/store.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
@@ -25,7 +26,7 @@ const ROUTES = [
   [/^\/messages$/, 'messages', messagesPage], [/^\/groups$/, 'messages', groupsPage], [/^\/group\/([0-9a-f-]{36})$/, 'messages', groupChatPage, ['id']], [/^\/group\/([0-9a-f-]{36})\/info$/, 'messages', groupInfoPage, ['id']], [/^\/join\/([a-z0-9]{6,20})$/, 'messages', joinRoute, ['code']], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
   [/^\/notifications$/, 'none', notificationsPage], [/^\/profile$/, 'profile', profilePage],
   [/^\/u\/([a-z0-9_]+)$/, 'profile', profilePage, ['username']], [/^\/settings$/, 'profile', settingsPage],
-  [/^\/admin$/, 'profile', adminPage], [/^\/calls$/, 'messages', callsPage], [/^\/post\/([0-9a-f-]{36})$/, 'none', postPage, ['id']],
+  [/^\/admin$/, 'profile', adminPage], [/^\/store$/, 'none', storePage], [/^\/calls$/, 'messages', callsPage], [/^\/post\/([0-9a-f-]{36})$/, 'none', postPage, ['id']],
 ];
 let view = null, cleanup = null, nav = 0, tabbar = null, badgeTimer = null;
 const ctx = { rerender: () => boot() };
