@@ -24,7 +24,7 @@ export async function aiPage(root) {
   page.append(h('div', { class: 'ai-hero' },
     h('div', { class: 'ai-orb' }, icon('bolt', 30)),
     h('div', null, h('b', null, 'مساعدك الذكي'), h('div', { class: 'muted small' }, 'اسأل، اكتب، ترجم، أو اطلب المساعدة'))),
-    quick, feed, status, composer));
+    quick, feed, status, composer);
   root.append(headerBar('NEXORA AI', { back: true }), page);
 
   function resize() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; }
