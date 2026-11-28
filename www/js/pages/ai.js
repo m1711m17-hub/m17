@@ -3,7 +3,7 @@ import { sb, state } from '../api.js';
 import { SUPABASE_URL, SUPABASE_KEY } from '../config.js';
 import { headerBar } from './home.js';
 
-const STARTER = 'أهلاً! أنا NEXORA AI 🤖\nكيف أقدر أساعدك اليوم؟';
+const STARTER = 'أهلاً! أنا NEXORA 🤖\nكيف أقدر أساعدك اليوم؟';
 
 export async function aiPage(root) {
   const messages = [{ role: 'assistant', content: STARTER }];
@@ -25,12 +25,12 @@ export async function aiPage(root) {
     h('div', { class: 'ai-orb' }, icon('bolt', 30)),
     h('div', null, h('b', null, 'مساعدك الذكي'), h('div', { class: 'muted small' }, 'اسأل، اكتب، ترجم، أو اطلب المساعدة'))),
     quick, feed, status, composer);
-  root.append(headerBar('NEXORA AI', { back: true }), page);
+  root.append(headerBar('NEXORA', { back: true }), page);
 
   function resize() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; }
   function bubble(role, text) {
     const item = h('article', { class: 'ai-message ' + (role === 'user' ? 'mine' : 'bot') });
-    item.append(h('div', { class: 'ai-message-label' }, role === 'user' ? 'أنت' : 'NEXORA AI'),
+    item.append(h('div', { class: 'ai-message-label' }, role === 'user' ? 'أنت' : 'NEXORA'),
       h('div', { class: 'ai-message-text' }, text));
     return item;
   }
@@ -45,11 +45,11 @@ export async function aiPage(root) {
   async function submit() {
     const text = input.value.trim();
     if (!text || busy) return;
-    if (!sb.session?.access_token || !state.me) return toast('سجّل الدخول أولاً لاستخدام NEXORA AI', 'err');
+    if (!sb.session?.access_token || !state.me) return toast('سجّل الدخول أولاً لاستخدام NEXORA', 'err');
     messages.push({ role: 'user', content: text });
     input.value = ''; resize(); paint();
     busy = true; send.disabled = true; status.textContent = 'يفكر الآن…';
-    const waiting = h('div', { class: 'ai-thinking' }, h('i'), h('i'), h('i'), ' NEXORA AI يكتب');
+    const waiting = h('div', { class: 'ai-thinking' }, h('i'), h('i'), h('i'), ' NEXORA يكتب');
     feed.append(waiting); feed.scrollTop = feed.scrollHeight;
     try {
       const response = await fetch(SUPABASE_URL + '/functions/v1/nexora-ai', {
@@ -71,8 +71,11 @@ export async function aiPage(root) {
     } catch (e) {
       messages.pop();
       paint();
-      toast(e.message || 'حدث خطأ أثناء إرسال الرسالة', 'err');
-      status.textContent = 'تعذر الاتصال — حاول مجدداً';
+      const message = e instanceof TypeError && /fetch/i.test(e.message)
+        ? 'تعذّر الوصول إلى خادم NEXORA. قد تكون وظيفة المساعد غير منشورة أو أن إعدادات الاتصال تمنع الطلب.'
+        : (e.message || 'حدث خطأ أثناء إرسال الرسالة');
+      toast(message, 'err');
+      status.textContent = 'تعذر الاتصال بالخادم — حاول مجدداً';
       input.value = text; resize();
     } finally {
       busy = false; send.disabled = false; input.focus();
