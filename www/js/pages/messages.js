@@ -46,7 +46,7 @@ export async function messagesPage(root) {
   const aiRow = h('a', { class: 'user-row conv ai-conv', href: '#/ai' },
     h('span', { class: 'ai-chat-avatar' }, icon('sparkles', 25)),
     h('div', { class: 'grow' },
-      h('div', { class: 'row between' }, h('b', null, 'مساعد NEXORA'), h('span', { class: 'ai-chat-tag' }, 'AI')),
+      h('div', { class: 'row between' }, h('b', null, 'مساعد الأعمال'), h('span', { class: 'ai-chat-tag' }, 'AI')),
       h('div', { class: 'row between' }, h('span', { class: 'muted ellipsis' }, 'أهلاً! أنا مساعدك الذكي، كيف أساعدك؟'), h('span', { class: 'muted small' }, ''))));
   const aiFab = h('a', { class: 'ai-list-fab', href: '#/ai', 'aria-label': 'افتح مساعد NEXORA', title: 'NEXORA AI' }, icon('sparkles', 25));
   root.append(headerBar('الرسائل', { right: [groupsBtn, logBtn, newBtn, bellButton()] }), h('div', { class: 'page' }, aiRow, list), aiFab);
