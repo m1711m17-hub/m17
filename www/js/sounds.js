@@ -95,3 +95,12 @@ export function startIncomingCallSound() {
   if (a) { let stopped = false; const play = () => { if (!stopped) { try { a.currentTime = 0; a.play()?.catch?.(() => {}); } catch {} } }; a.addEventListener('ended', play); play(); return () => { stopped = true; a.removeEventListener('ended', play); try { a.pause(); a.currentTime = 0; } catch {} }; }
   return runPreset('call', true);
 }
+
+export function customSoundData(key) {
+  const data = read(key);
+  if (!data) return null;
+  let name = TYPES[key] || 'NEXORA';
+  try { name = localStorage.getItem(PREFIX + key + '.name') || name; } catch {}
+  const match = /^data:([^;,]+)[^,]*;base64,/i.exec(data);
+  return { dataUrl: data, mimeType: match?.[1] || 'audio/mpeg', fileName: name };
+}
