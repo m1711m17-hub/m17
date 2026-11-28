@@ -646,3 +646,18 @@ body.in-chat .tabbar{display:none}
 .share-ic.wa{background:#25d366}.share-ic.tg{background:#229ed9}.share-ic.fb{background:#1877f2}.share-ic.sms{background:#34c759}.share-ic.mail{background:#4f8cff}.share-ic.copy{background:#3b82f6}
 .share-sep{margin-top:2px}
 .post-link{color:#22d3ee;font-weight:700;text-decoration:none;display:inline-block;margin-top:2px}
+
+
+/* ===== NEXORA assistant pinned at top of messages list ===== */
+.messages-page .page > .ai-conv{
+  position:sticky;
+  top:calc(64px + var(--safe-t));
+  z-index:19;
+  margin:0 0 12px;
+  background:linear-gradient(115deg,rgba(28,20,65,.98),rgba(10,20,48,.98));
+  border:1px solid rgba(164,91,255,.62);
+  box-shadow:0 8px 24px rgba(0,0,0,.28),0 0 18px rgba(139,92,246,.12);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.messages-page .page > .ai-conv .ai-chat-avatar{flex:none}
