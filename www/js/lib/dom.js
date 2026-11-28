@@ -86,6 +86,10 @@ const P = {
   heartoff: '<path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-.5 1.2-1.4 2.6-2.8 3.9M3 3l18 18"/>',
   mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+  grid: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M9.2 3.5v17M14.8 3.5v17M3.5 9.2h17M3.5 14.8h17"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  chevd: '<path d="m6 9 6 6 6-6"/>',
+  text: '<path d="M5 6h14M12 6v13M9 19h6"/>',
 };
 export function icon(name, size = 22, cls = '') {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

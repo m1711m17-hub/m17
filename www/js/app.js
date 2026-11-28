@@ -139,7 +139,7 @@ bus.addEventListener('rt:notification', () => refreshBadges());
 const CapApp = window.Capacitor?.Plugins?.App;
 CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
-  const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
+  const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.pv-overlay,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
   if (/^\/(chat\/|group\/|groups|join\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
