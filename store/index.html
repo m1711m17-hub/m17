@@ -1,81 +1,61 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#080d1b">
-<meta name="description" content="متجر NEXORA الرسمي لشحن التفاعل داخل التطبيق">
-<title>NEXORA STORE | متجر التطبيق</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080d1b"><meta name="description" content="متجر NEXORA الرسمي لشحن التفاعل داخل التطبيق">
+<title>NEXORA STORE</title>
 <style>
-:root{color-scheme:dark;--bg:#080d1b;--panel:#101a30;--panel2:#14213c;--line:#263958;--muted:#9baac4;--text:#f4f7ff;--blue:#5b8cff;--cyan:#55d8e8;--gold:#e8c77a}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#19366a 0,transparent 38%),radial-gradient(ellipse at 0 35%,#10284a 0,transparent 30%),var(--bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);min-height:100vh}
-a{color:inherit;text-decoration:none}.wrap{width:min(1080px,calc(100% - 32px));margin:auto}
-header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff12}
-.brand{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:1.5px;font-size:20px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#76a6ff,#445bda 55%,#192d67);display:grid;place-items:center;box-shadow:0 8px 26px #4777ff45;font-size:19px}
-.navtag{font-size:12px;color:#d9e5ff;border:1px solid #ffffff20;border-radius:30px;padding:8px 13px;background:#ffffff08}
-.hero{padding:66px 0 38px;text-align:center}.eyebrow{display:inline-flex;gap:8px;align-items:center;border:1px solid #6b91df55;background:#4169b522;color:#c9dcff;padding:8px 14px;border-radius:30px;font-size:12px}.dot{width:7px;height:7px;background:#69e0c0;border-radius:50%;box-shadow:0 0 12px #69e0c0}
-h1{font-size:clamp(34px,7vw,62px);line-height:1.16;margin:22px 0 13px;letter-spacing:-1.8px}h1 span{background:linear-gradient(90deg,#8cb4ff,#58dce9);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sub{color:var(--muted);max-width:590px;margin:0 auto;line-height:1.9;font-size:15px}
-.owner{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:10px 15px;border-radius:14px;background:linear-gradient(100deg,#e8c77a1a,#ffffff08);border:1px solid #e8c77a55;color:#f4dfaa;font-size:13px}
-.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:36px 0 17px}.section-head h2{font-size:21px;margin:0}.section-head p{font-size:12px;color:var(--muted);margin:5px 0 0}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.service{border:1px solid var(--line);background:linear-gradient(155deg,#152440eF,#0e172a);border-radius:21px;padding:20px;position:relative;overflow:hidden;cursor:pointer;transition:.2s;min-height:190px}.service:before{content:"";position:absolute;width:130px;height:130px;border-radius:50%;background:var(--glow);filter:blur(45px);opacity:.2;top:-60px;left:-30px}.service:hover,.service.active{border-color:#7da4ff;transform:translateY(-2px);box-shadow:0 12px 32px #0004}.service.active{background:linear-gradient(155deg,#1b3155,#111c32)}
-.service-icon{width:47px;height:47px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:var(--iconbg);margin-bottom:18px}.service h3{font-size:17px;margin:0 0 6px}.service p{font-size:12px;color:var(--muted);margin:0;line-height:1.7}.select-label{font-size:11px;color:#9fbfff;margin-top:16px;display:block}
-.order-layout{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin:18px 0 50px}.panel{border:1px solid var(--line);border-radius:21px;background:#101a2deF;padding:22px}.panel h3{margin:0 0 17px;font-size:17px}.field{margin:14px 0}.field label{display:block;font-size:12px;color:#b8c6dc;margin-bottom:8px}.field input,.field select{width:100%;border:1px solid #2b4165;background:#0a1324;color:#fff;border-radius:12px;padding:14px;font:inherit;outline:none}.field input:focus,.field select:focus{border-color:#78a1ff;box-shadow:0 0 0 3px #6c91ff20}.hint{font-size:11px;color:var(--muted);line-height:1.7}
-.qr-placeholder{border:1px dashed #5a7199;border-radius:16px;min-height:150px;display:grid;place-items:center;text-align:center;padding:16px;background:repeating-linear-gradient(135deg,#ffffff04 0 8px,transparent 8px 16px)}.qr-placeholder b{display:block;font-size:13px;margin-bottom:6px}.qr-placeholder span{font-size:11px;color:var(--muted);line-height:1.7}
-.btn{width:100%;border:0;border-radius:13px;padding:14px 18px;background:linear-gradient(100deg,#5688ff,#4d6de0);color:white;font:700 14px system-ui;cursor:pointer;margin-top:10px}.btn:disabled{opacity:.45;cursor:not-allowed}
-.notice{padding:13px 14px;border-radius:13px;background:#e8c77a12;border:1px solid #e8c77a38;color:#ecdcae;font-size:11px;line-height:1.8;margin-top:14px}
-footer{border-top:1px solid #ffffff12;padding:22px 0 34px;color:#8190aa;font-size:11px;text-align:center;line-height:2}
-@media(max-width:720px){.hero{padding:48px 0 24px}.grid{grid-template-columns:1fr;gap:11px}.service{min-height:unset;padding:17px;display:grid;grid-template-columns:48px 1fr;column-gap:13px;align-items:center}.service-icon{grid-row:span 2;margin:0}.service h3{align-self:end}.service p{align-self:start}.select-label{grid-column:2;margin-top:8px}.order-layout{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.panel{padding:18px}}
+:root{color-scheme:dark;--bg:#080d1b;--panel:#111c31;--line:#293c5d;--muted:#9eacc5;--text:#f4f7ff;--blue:#648fff;--cyan:#57dbe7;--gold:#e9cb82}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#19366a 0,transparent 38%),var(--bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);min-height:100vh}button,input,select{font:inherit}button{cursor:pointer}.wrap{width:min(1050px,calc(100% - 28px));margin:auto}header{height:70px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff12}.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:1px}.logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(145deg,#7aa8ff,#344fc3);display:grid;place-items:center;font-size:20px}.tag{font-size:11px;border:1px solid #ffffff22;border-radius:30px;padding:8px 12px;color:#d6e4ff}.hero{text-align:center;padding:48px 0 28px}.eyebrow{display:inline-block;border:1px solid #6b91df55;background:#4169b522;color:#c9dcff;padding:8px 14px;border-radius:30px;font-size:12px}h1{font-size:clamp(34px,7vw,58px);margin:18px 0 10px;line-height:1.2}h1 span{background:linear-gradient(90deg,#8cb4ff,#58dce9);-webkit-background-clip:text;color:transparent}.sub{color:var(--muted);max-width:580px;margin:auto;line-height:1.9;font-size:14px}.owner{display:inline-block;margin-top:18px;padding:9px 14px;border:1px solid #e8c77a55;border-radius:12px;color:#f2dda9;background:#e8c77a12;font-size:12px}.bar{display:flex;align-items:end;justify-content:space-between;margin:26px 0 14px;gap:10px}.bar h2{font-size:19px;margin:0}.bar p{font-size:11px;color:var(--muted);margin:5px 0 0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.service{border:1px solid var(--line);background:linear-gradient(155deg,#172744,#0e1729);border-radius:19px;padding:18px;text-align:right;color:var(--text);min-height:150px}.service.active{border-color:#82a7ff;box-shadow:0 0 0 2px #648fff22}.ico{font-size:25px;margin-bottom:12px}.service b{display:block;margin-bottom:5px}.service small{color:var(--muted);line-height:1.7}.layout{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin:14px 0 40px}.panel{background:#111c31eF;border:1px solid var(--line);border-radius:19px;padding:20px}.panel h3{font-size:16px;margin:0 0 14px}.field{margin:13px 0}.field label{display:block;font-size:12px;color:#bfcee4;margin-bottom:7px}.field input,.field select{width:100%;background:#0a1426;border:1px solid #304566;border-radius:11px;color:white;padding:13px;outline:none}.field input:focus{border-color:#7ca3ff}.hint{font-size:11px;color:var(--muted);line-height:1.8}.btn{border:0;border-radius:12px;background:linear-gradient(100deg,#5688ff,#4d6de0);color:white;padding:13px 17px;font-weight:750;width:100%;margin-top:9px}.btn.secondary{background:#243653}.btn.danger{background:#743b4b}.btn:disabled{opacity:.45}.qr{min-height:140px;border:1px dashed #60779d;border-radius:15px;display:grid;place-items:center;text-align:center;padding:15px;color:var(--muted);font-size:12px;line-height:1.8}.hidden{display:none!important}.msg{padding:11px;border-radius:10px;margin:10px 0;font-size:12px;line-height:1.7;background:#213452;color:#dbe8ff}.msg.err{background:#542c39;color:#ffdbe2}.msg.ok{background:#173e39;color:#c7fff0}.orders{display:grid;gap:9px}.order{padding:13px;border:1px solid #2b4062;border-radius:12px;background:#0d1729;font-size:12px}.order strong{font-size:13px}.status{display:inline-block;border-radius:30px;padding:4px 9px;background:#594927;color:#ffe6a5;font-size:10px}.status.completed,.status.approved{background:#17483d;color:#b9ffe7}.status.rejected{background:#542d3a;color:#ffd5df}.adminrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}footer{text-align:center;color:#8292ae;border-top:1px solid #ffffff12;padding:22px 0 30px;font-size:11px;line-height:2}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.service{min-height:unset;display:flex;align-items:center;gap:14px}.ico{margin:0}.layout{grid-template-columns:1fr}.hero{padding-top:35px}.bar{align-items:start;flex-direction:column}.panel{padding:16px}}
 </style>
 </head>
-<body>
-<header class="wrap"><a class="brand" href="#"><span class="logo">N</span><span>NEXORA <small style="font-size:10px;color:#8ea8d8;letter-spacing:2px">STORE</small></span></a><span class="navtag">المتجر الرسمي للتطبيق</span></header>
+<body><header class="wrap"><div class="brand"><span class="logo">N</span><span>NEXORA <small style="font-size:10px;color:#8ea8d8">STORE</small></span></div><span class="tag">متجر التطبيق الرسمي</span></header>
 <main class="wrap">
-<section class="hero">
-<div class="eyebrow"><i class="dot"></i> عالم NEXORA بين إيديك</div>
-<h1>خلّي حضورك <span>أقوى</span></h1>
-<p class="sub">متجر شحن التفاعل داخل NEXORA. اختَر الخدمة المناسبة لحسابك، وتابع طلبك بكل سهولة وأمان.</p>
-<div class="owner">✦ بإشراف مؤسس ومالك التطبيق</div>
+<section class="hero"><div class="eyebrow">✦ عالم NEXORA بين إيديك</div><h1>خلّي حضورك <span>أقوى</span></h1><p class="sub">اشحن التفاعل داخل حسابك بسهولة. اختر الخدمة وقدّم طلبك، وتابع حالة الدفع والشحن من مكان واحد.</p><div class="owner">✦ بإشراف مؤسس ومالك التطبيق</div></section>
+<div class="bar"><div><h2>خدمات الشحن</h2><p>حدد الخدمة التي تريدها</p></div></div>
+<section class="grid">
+<button class="service active" data-service="likes"><div class="ico">♥️</div><div><b>لايكات</b><small>دعم التفاعل على منشوراتك</small></div></button>
+<button class="service" data-service="followers"><div class="ico">👥</div><div><b>متابعين</b><small>زيادة عدد متابعي حسابك</small></div></button>
+<button class="service" data-service="views"><div class="ico">▶️</div><div><b>مشاهدات</b><small>زيادة مشاهدات المحتوى</small></div></button>
 </section>
-<div class="section-head"><div><h2>اختَر خدمة الشحن</h2><p>حدد نوع الخدمة للانتقال إلى تفاصيل الطلب</p></div></div>
-<section class="grid" aria-label="خدمات الشحن">
-<button class="service active" data-service="likes" style="--glow:#ff527f;--iconbg:#ff527f20;text-align:right;color:inherit">
-<span class="service-icon">♥</span><h3>شحن لايكات</h3><p>زيادة التفاعل على منشوراتك داخل NEXORA.</p><span class="select-label">الخدمة المحددة ✓</span>
-</button>
-<button class="service" data-service="followers" style="--glow:#5b8cff;--iconbg:#5b8cff20;text-align:right;color:inherit">
-<span class="service-icon">♙</span><h3>شحن متابعين</h3><p>دعم نمو حسابك وزيادة عدد متابعيك.</p><span class="select-label">اختيار الخدمة</span>
-</button>
-<button class="service" data-service="views" style="--glow:#55d8e8;--iconbg:#55d8e820;text-align:right;color:inherit">
-<span class="service-icon">▶</span><h3>شحن مشاهدات</h3><p>رفع عدد مشاهدات منشوراتك وقصصك.</p><span class="select-label">اختيار الخدمة</span>
-</button>
-</section>
-<div class="section-head"><div><h2>تفاصيل الطلب</h2><p>الأسعار والباقات ستُضاف بعد تحديدها</p></div></div>
-<section class="order-layout">
+<div class="bar"><div><h2>حسابك وطلب الشحن</h2><p>سجّل الدخول بنفس حساب التطبيق</p></div></div>
+<section class="layout">
 <div class="panel">
-<h3>بيانات الشحن</h3>
-<div class="field"><label for="username">اسم المستخدم داخل NEXORA</label><input id="username" placeholder="مثال: nexora_user" autocomplete="off"></div>
-<div class="field"><label for="target">رابط المنشور (للايكات والمشاهدات)</label><input id="target" placeholder="ضع رابط المنشور هنا"></div>
-<div class="field"><label for="quantity">الكمية المطلوبة</label><input id="quantity" type="number" min="1" placeholder="حدد الكمية لاحقاً"></div>
-<p class="hint">لن نطلب كلمة مرور حسابك نهائياً. نحتاج فقط اسم المستخدم ورابط المحتوى عند الحاجة.</p>
-<div class="notice">المتجر قيد التجهيز حالياً. سيتم تفعيل إرسال الطلبات بعد ربط تسجيل الدخول وقاعدة بيانات NEXORA وتحديد الباقات والأسعار.</div>
-<button class="btn" id="submit" disabled>إرسال طلب الشحن — قريباً</button>
+<div id="authBox"><h3>تسجيل الدخول</h3><div class="field"><label>رقم الهاتف أو البريد الإلكتروني</label><input id="identity" autocomplete="username" placeholder="رقم الهاتف مع رمز الدولة أو البريد"></div><div class="field"><label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password" placeholder="كلمة مرور حسابك"></div><button class="btn" id="login">دخول إلى المتجر</button><p class="hint">استخدم بيانات الدخول نفسها التي تستخدمها في التطبيق. لا تنشئ حساباً جديداً من هنا.</p></div>
+<div id="accountBox" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center"><h3 id="welcome">أهلاً بك</h3><button class="btn secondary" id="logout" style="width:auto;margin:0;padding:8px 12px">خروج</button></div>
+<div class="field"><label>اسم المستخدم داخل التطبيق</label><input id="username" placeholder="اسم المستخدم"></div>
+<div class="field" id="postField"><label>رابط المنشور (للايكات والمشاهدات)</label><input id="postUrl" placeholder="رابط المنشور"></div>
+<div class="field"><label>الكمية المطلوبة</label><input id="quantity" type="number" min="1" max="1000000" placeholder="مثال: 100"></div>
+<div class="field"><label>رقم عملية شام كاش (بعد التحويل)</label><input id="reference" placeholder="اختياري حالياً"></div>
+<div class="field"><label>صورة إيصال التحويل</label><input id="proof" type="file" accept="image/png,image/jpeg,image/webp"></div>
+<p class="hint">لا نطلب كلمة مرور حسابك داخل التطبيق أبداً. لا ترفع الإيصال قبل ظهور باركود الدفع والمبلغ المعتمد.</p>
+<div id="formMsg"></div><button class="btn" id="submitOrder">إرسال طلب الشحن</button>
 </div>
-<aside class="panel">
-<h3>الدفع عبر شام كاش</h3>
-<div class="qr-placeholder"><div><b>سيظهر باركود شام كاش هنا</b><span>سيتم إضافة صورة QR الخاصة بك عند إرسالها</span></div></div>
-<div class="field"><label>طريقة تأكيد الدفع</label><div class="hint">بعد تفعيل المتجر: تحويل عبر شام كاش، ثم رفع صورة الإيصال ورقم العملية لمراجعة الطلب.</div></div>
-<div class="notice">لا تحوّل أي مبلغ حالياً. بيانات الدفع لم تُضف بعد، ولن يتم استقبال دفعات من هذه الصفحة.</div>
+<div id="ordersBox" class="hidden" style="margin-top:20px"><h3>طلباتي السابقة</h3><div class="orders" id="orders"></div></div>
+</div>
+<aside class="panel"><h3>الدفع عبر شام كاش</h3><div class="qr"><div><b style="display:block;color:#e6edff;margin-bottom:6px">باركود شام كاش سيضاف هنا</b>بانتظار صورة QR منك</div></div><div class="msg">حالياً لا تحوّل أي مبلغ. لم يتم إدخال الباركود أو الأسعار بعد، لذلك لن نطلب منك الدفع.</div><p class="hint">بعد إضافة الباركود والأسعار، ستحوّل المبلغ وترفع صورة الإيصال ورقم العملية. تتم مراجعة الدفع يدوياً قبل تنفيذ الشحن.</p>
+<div id="adminBox" class="hidden" style="margin-top:22px"><h3>إدارة الطلبات</h3><div class="orders" id="adminOrders"></div></div>
 </aside>
-</section>
-</main>
-<footer><div class="wrap">NEXORA STORE · المتجر الرسمي لتطبيق NEXORA<br>© جميع الحقوق محفوظة</div></footer>
+</section></main><footer class="wrap">NEXORA STORE · المتجر الرسمي لتطبيق NEXORA<br>© جميع الحقوق محفوظة</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script>
-const names={likes:"شحن لايكات",followers:"شحن متابعين",views:"شحن مشاهدات"};
-document.querySelectorAll(".service").forEach(card=>card.addEventListener("click",()=>{
- document.querySelectorAll(".service").forEach(x=>{x.classList.remove("active");x.querySelector(".select-label").textContent="اختيار الخدمة"});
- card.classList.add("active");card.querySelector(".select-label").textContent="الخدمة المحددة ✓";
- const target=document.getElementById("target");target.disabled=card.dataset.service==="followers";
- target.placeholder=card.dataset.service==="followers"?"لا يلزم رابط للمتابعين":"ضع رابط المنشور هنا";
-}));
-</script>
-</body></html>
+(()=> {
+const URL="https://zjxpsjgqtfoianxafsue.supabase.co";
+const KEY="sb_publishable_gc1eKYFLfgbPBSeSYrBKQw_kJhsfywp";
+const sb=window.supabase.createClient(URL,KEY);
+let service="likes",currentUser=null,isOwner=false;
+const $=id=>document.getElementById(id);
+const labels={likes:"لايكات",followers:"متابعين",views:"مشاهدات"};
+function message(el,text,kind=""){el.innerHTML='<div class="msg '+kind+'">'+text.replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))+'</div>'}
+document.querySelectorAll(".service").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".service").forEach(x=>x.classList.remove("active"));b.classList.add("active");service=b.dataset.service;$("postField").classList.toggle("hidden",service==="followers")}));
+$("login").onclick=async()=>{const ident=$("identity").value.trim(),password=$("password").value;if(!ident||!password)return message($("authBox"),"أدخل بيانات الدخول كاملة","err");$("login").disabled=true;const creds=ident.includes("@")?{email:ident,password}:{phone:ident,password};const {data,error}=await sb.auth.signInWithPassword(creds);$("login").disabled=false;if(error)return message($("authBox"),"تعذّر تسجيل الدخول: "+error.message,"err");await start(data.user)};
+$("logout").onclick=async()=>{await sb.auth.signOut();location.reload()};
+async function start(user){currentUser=user;const {data:profile,error}=await sb.from("profiles").select("username,display_name,role").eq("id",user.id).maybeSingle();if(error||!profile){return message($("authBox"),"لم نتمكن من تحميل ملف حسابك. جرّب مرة أخرى.","err")}isOwner=profile.role==="OWNER";$("authBox").classList.add("hidden");$("accountBox").classList.remove("hidden");$("ordersBox").classList.remove("hidden");$("welcome").textContent="أهلاً "+(profile.display_name||profile.username||"بك");$("username").value=profile.username||"";if(isOwner)$("adminBox").classList.remove("hidden");await loadOrders();if(isOwner)await loadAdmin()}
+async function loadOrders(){const {data,error}=await sb.from("store_orders").select("id,service,quantity,status,created_at,amount,currency").order("created_at",{ascending:false}).limit(20);if(error)return; $("orders").innerHTML=data.length?data.map(o=>'<div class="order"><strong>'+labels[o.service]+'</strong> · '+o.quantity.toLocaleString("en-US")+'<br><span class="status '+o.status+'">'+({pending:"بانتظار المراجعة",approved:"تم قبول الدفع",rejected:"مرفوض",completed:"مكتمل"}[o.status]||o.status)+'</span><div class="hint">'+new Date(o.created_at).toLocaleString("ar")+(o.amount?" · "+o.amount+" "+o.currency:"")+'</div></div>').join(""):"<p class='hint'>ما عندك طلبات لحد الآن.</p>"}
+$("submitOrder").onclick=async()=>{const username=$("username").value.trim(),qty=Number($("quantity").value),url=$("postUrl").value.trim(),file=$("proof").files[0],ref=$("reference").value.trim();if(username.length<3||!Number.isInteger(qty)||qty<1||qty>1000000)return message($("formMsg"),"تأكد من اسم المستخدم والكمية.","err");if(service!=="followers"&&!url)return message($("formMsg"),"أدخل رابط المنشور المطلوب.","err");if(file&&(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5*1024*1024))return message($("formMsg"),"الصورة يجب أن تكون JPG أو PNG أو WEBP وأقل من 5 ميغابايت.","err");$("submitOrder").disabled=true;let path=null;if(file){path=currentUser.id+"/"+crypto.randomUUID()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const {error}=await sb.storage.from("store-proofs").upload(path,file,{contentType:file.type,upsert:false});if(error){$("submitOrder").disabled=false;return message($("formMsg"),"تعذر رفع صورة الإيصال: "+error.message,"err")}}
+const {error}=await sb.from("store_orders").insert({user_id:currentUser.id,service,target_username:username,post_url:service==="followers"?null:url,quantity:qty,payment_reference:ref||null,proof_path:path});$("submitOrder").disabled=false;if(error)return message($("formMsg"),"تعذر إرسال الطلب: "+error.message,"err");message($("formMsg"),"تم تسجيل طلبك بنجاح. سيظهر بحالة انتظار المراجعة.","ok");$("quantity").value="";$("postUrl").value="";$("reference").value="";$("proof").value="";await loadOrders()};
+async function loadAdmin(){const {data,error}=await sb.from("store_orders").select("id,user_id,service,target_username,post_url,quantity,payment_reference,proof_path,status,created_at").order("created_at",{ascending:false}).limit(50);if(error)return message($("adminOrders"),"تعذر تحميل الطلبات: "+error.message,"err");if(!data.length){$("adminOrders").innerHTML="<p class='hint'>لا توجد طلبات بعد.</p>";return}$("adminOrders").innerHTML="";for(const o of data){const card=document.createElement("div");card.className="order";card.innerHTML="<strong>"+labels[o.service]+"</strong> · "+o.quantity+"<br>الحساب: "+o.target_username+"<br><span class='hint'>"+new Date(o.created_at).toLocaleString("ar")+" · "+o.status+"</span>"+(o.payment_reference?"<br>رقم العملية: "+o.payment_reference:"")+(o.post_url?"<br><a target='_blank' rel='noopener' href='"+encodeURI(o.post_url)+"'>فتح المنشور</a>":"");if(o.proof_path){const {data:signed}=await sb.storage.from("store-proofs").createSignedUrl(o.proof_path,300);if(signed?.signedUrl){const link=document.createElement("a");link.href=signed.signedUrl;link.target="_blank";link.rel="noopener";link.textContent="عرض إيصال الدفع";card.append(document.createElement("br"),link)}}if(o.status==="pending"){const row=document.createElement("div");row.className="adminrow";for(const [label,status] of [["قبول الدفع","approved"],["رفض الطلب","rejected"]]){const b=document.createElement("button");b.className="btn "+(status==="rejected"?"danger":"");b.textContent=label;b.onclick=async()=>{b.disabled=true;const {error}=await sb.from("store_orders").update({status,reviewed_at:new Date().toISOString()}).eq("id",o.id);if(error){b.disabled=false;alert(error.message)}else await loadAdmin()};row.append(b)}card.append(row)}$("adminOrders").append(card)}}
+sb.auth.getSession().then(({data})=>{if(data.session)start(data.session.user)});
+})();
+</script></body></html>
