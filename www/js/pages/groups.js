@@ -2,7 +2,7 @@ import { h, icon, avatar, clear, toast, timeAgo, hhmm, dayLabel, sheet, actionSh
 import { sb, state, PROFILE_MINI, rt, bus, uploadMedia, uploadAudio } from '../api.js';
 import { headerBar, bellButton } from './home.js';
 import { pickPeople } from './people.js';
-import { stickerPanel } from './stickers.js';
+import { stickerPanel, customStickerUrl, customStickerBubble } from './stickers.js';
 import { viewImage } from './postcard.js';
 import { createRecorder, recorderSupported, voiceBubble, fmtDur } from '../lib/voice.js';
 
@@ -210,7 +210,7 @@ export async function groupChatPage(root, params) {
   const fileIn = h('input', { type: 'file', accept: 'image/*,video/*', style: { display: 'none' } });
   const attachBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إرفاق صورة أو فيديو', onclick: () => fileIn.click() }, icon('image', 22));
   const stickBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'ملصقات', onpointerdown: (e) => e.preventDefault(), onclick: () => { input.blur(); panel.toggle(); stickBtn.classList.toggle('on', panel.isOpen); } }, icon('smile', 22));
-  const panel = stickerPanel({ onPick: (st) => { panel.close(); stickBtn.classList.remove('on'); send({ sticker: `${st.emoji}|${st.label}|${st.color}` }); } });
+  const panel = stickerPanel({ onPick: (st) => { panel.close(); stickBtn.classList.remove('on'); send({ sticker: st.url ? 'u:' + st.url : `${st.emoji}|${st.label}|${st.color}` }); } });
   const micBtn = h('button', { class: 'icon-btn accent mic', type: 'button', 'aria-label': 'تسجيل رسالة صوتية', onclick: startRec }, icon('mic', 22));
   const replyBar = h('div', { class: 'reply-bar', hidden: true });
   const memberCount = h('div', { class: 'muted small' }, memberRows.length + ' أعضاء');
@@ -247,7 +247,8 @@ export async function groupChatPage(root, params) {
       kids.push(h('button', { class: 'reply-quote', type: 'button', onclick: (e) => { e.stopPropagation(); jumpTo(m.reply_to); } },
         h('b', null, q ? (q.sender_id === state.me.id ? 'أنت' : (qp?.display_name || qp?.username || 'عضو')) : 'رسالة'), h('span', { class: 'ellipsis' }, q ? previewOf(q) : 'رسالة محذوفة أو أقدم')));
     }
-    if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
+    if (m.sticker && customStickerUrl(m.sticker)) kids.push(customStickerBubble(customStickerUrl(m.sticker)));
+      else if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
     if (m.audio_url) kids.push(voiceBubble(m, { mine }));
     if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
     if (m.body) kids.push(h('div', { class: 'b-text' }, m.body));

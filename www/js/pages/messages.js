@@ -5,7 +5,7 @@ import { headerBar, bellButton } from './home.js';
 import { userRow } from './explore.js';
 import { blockUser, reportDialog, viewImage } from './postcard.js';
 import { createRecorder, recorderSupported, voiceBubble, fmtDur, decodeWave } from '../lib/voice.js';
-import { stickerPanel } from './stickers.js';
+import { stickerPanel, customStickerUrl, customStickerBubble } from './stickers.js';
 import { openCamera, cameraSupported } from './camera.js';
 import { placeCall } from './calls.js';
 
@@ -109,7 +109,7 @@ export async function chatPage(root, params) {
   const attach = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'إرفاق من المعرض', onclick: () => fileIn.click() }, icon('image', 22));
   const camBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'الكاميرا', onclick: () => openCamera({ onSend: async (f) => { toast('جارٍ الرفع...'); const m = await whileSending(f.type.startsWith('video') ? 'video' : 'image', () => uploadMedia('chat', f)); await send({ media_url: m.url, media_type: m.type }); } }) }, icon('camera', 22));
   const stickBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'ملصقات', onpointerdown: keepFocus, onclick: () => { input.blur(); panel.toggle(); stickBtn.classList.toggle('on', panel.isOpen); } }, icon('smile', 22));
-  const panel = stickerPanel({ onPick: (st) => { panel.close(); stickBtn.classList.remove('on'); send({ sticker: `${st.emoji}|${st.label}|${st.color}` }); } });
+  const panel = stickerPanel({ onPick: (st) => { panel.close(); stickBtn.classList.remove('on'); send({ sticker: st.url ? 'u:' + st.url : `${st.emoji}|${st.label}|${st.color}` }); } });
   const micBtn = h('button', { class: 'icon-btn accent mic', type: 'button', 'aria-label': 'تسجيل رسالة صوتية (اضغط مطولاً)' }, icon('mic', 22));
   const recBar = h('div', { class: 'rec-bar', hidden: true });
   const statusEl = h('div', { class: 'chat-status muted small' });
@@ -298,7 +298,8 @@ export async function chatPage(root, params) {
           h('span', { class: 'call-event-sub' }, outcome + (duration ? ' · ' + duration : '')))));
     } else {
       if (m.story_id || m.story_preview) kids.push(h('div', { class: 'story-quote' }, m.story_preview ? h('img', { src: m.story_preview, alt: '' }) : null, h('span', null, mine ? 'رددت على حالة' : 'رد على حالتك')));
-      if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
+      if (m.sticker && customStickerUrl(m.sticker)) kids.push(customStickerBubble(customStickerUrl(m.sticker)));
+      else if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
       if (m.audio_url) kids.push(voiceBubble(m, { mine }));
       if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
       if (m.body) kids.push(h('div', { class: 'b-text' }, ...bodyParts(m.body)));
