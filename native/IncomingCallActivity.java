@@ -1,4 +1,4 @@
-package com.m17.social;
+package com.capacitorjs.plugins.pushnotifications;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -93,7 +93,8 @@ public class IncomingCallActivity extends Activity {
     private int dp(int value) { return (int)(value * getResources().getDisplayMetrics().density + 0.5f); }
 
     private void continueInApp(String action) {
-        Intent launch = new Intent(this, MainActivity.class);
+        Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        if (launch == null) { finish(); return; }
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         launch.putExtra("m17_incoming_call_id", callId);
         launch.putExtra("m17_incoming_call_type", kind);
