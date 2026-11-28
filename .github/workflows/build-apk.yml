@@ -56,6 +56,9 @@ jobs:
           mkdir -p $D
           for F in native/*.java; do [ "$(basename "$F")" = "IncomingCallNotification.java" ] || cp "$F" "$D/"; done
           ls $D
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i '/<\/application>/i\    <activity android:name=".IncomingCallActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />' $M
+          grep -n "IncomingCallActivity" $M
       - name: Version stamp (so installed apps can detect newer builds)
         run: |
           V="1.0.${{ github.run_number }}"
