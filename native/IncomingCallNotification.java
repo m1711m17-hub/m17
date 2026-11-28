@@ -1,4 +1,4 @@
-package com.m17.social;
+package com.capacitorjs.plugins.pushnotifications;
 
 import android.app.ActivityManager;
 import android.app.Notification;
