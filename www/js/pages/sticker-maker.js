@@ -1,6 +1,22 @@
 import { h, icon, toast, clear } from '../lib/dom.js';
 import { encodeGif } from '../lib/gif.js';
 
+// Detect animated image formats that Android galleries may label simply as PNG.
+async function isAnimatedImageFile(file) {
+  const name = String(file.name || '').toLowerCase();
+  const type = String(file.type || '').toLowerCase();
+  if (type === 'image/gif' || type === 'image/webp' || /\\.(gif|webp)$/i.test(name)) return true;
+  if (type !== 'image/png' && !/\\.png$/i.test(name)) return false;
+  try {
+    const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 2 * 1024 * 1024)).arrayBuffer());
+    // APNG animation control chunk (acTL).
+    for (let i = 8; i + 8 < bytes.length; i++) {
+      if (bytes[i] === 97 && bytes[i + 1] === 99 && bytes[i + 2] === 84 && bytes[i + 3] === 76) return true;
+    }
+  } catch {}
+  return false;
+}
+
 // Full-screen sticker creator: pick an image/video, cut a region by hand (lasso / circle / square / whole),
 // pick a clip (start + length) for videos -> animated GIF sticker, or a PNG for images.
 // onSave(blob, animated) uploads/saves and resolves when done.
