@@ -22,7 +22,7 @@ export async function homePage(root) {
   const feed = h('div', { class: 'feed' });
   const storiesBox = h('div'); const lives = liveStrip();
   const more = h('button', { class: 'btn ghost block', style: { display: 'none' } }, 'عرض المزيد');
-  root.append(headerBar(h('span', { class: 'logo-text' }, 'NEXORA'), { right: [isStaff() ? h('button', { class: 'icon-btn', 'aria-label': 'الإدارة', onclick: () => (location.hash = '#/admin') }, icon('shield', 23)) : null, bellButton()] }),
+  root.append(headerBar(h('span', { class: 'logo-text' }, 'NEXORA'), { right: [h('button', { class: 'icon-btn', 'aria-label': 'المتجر', onclick: () => (location.hash = '#/store') }, icon('shopping-bag', 22)), isStaff() ? h('button', { class: 'icon-btn', 'aria-label': 'الإدارة', onclick: () => (location.hash = '#/admin') }, icon('shield', 23)) : null, bellButton()] }),
     h('div', { class: 'page' }, quickComposer(), lives, storiesBox, feed, more));
   let ids = [], before = null, loading = false;
   const PAGE = 15;
