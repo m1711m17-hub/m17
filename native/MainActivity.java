@@ -28,6 +28,7 @@ public class MainActivity extends BridgeActivity {
         prepareIncomingCallWindow(getIntent());
         registerPlugin(AudioRoutePlugin.class);
         registerPlugin(NotificationSoundPlugin.class);
+        registerPlugin(IncomingCallAccessPlugin.class);
         registerPlugin(UpdateInstallerPlugin.class);
         super.onCreate(savedInstanceState);
     }
