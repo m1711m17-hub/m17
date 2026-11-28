@@ -207,7 +207,8 @@ export async function profilePage(root, params) {
   const av = h('div', { class: 'pf-av' },
     h('button', { class: 'pf-av-btn' + (hasStory ? (groups[gi].allViewed ? ' seen' : ' story') : ''), type: 'button', 'aria-label': 'الصورة الشخصية',
       onclick: () => (hasStory ? openStory() : (p.avatar_url ? viewImage(p.avatar_url) : null)) }, avatar(p, 86)),
-    isMe ? h('button', { class: 'pf-av-plus', type: 'button', 'aria-label': 'إضافة حالة', onclick: () => pick('image/*,video/*', true) }, icon('plus', 14)) : null);
+    p.is_verified ? h('span', { class: 'pf-av-ver', title: 'حساب موثّق بموافقة المالك', 'aria-label': 'حساب موثّق' }, '✓')
+      : (isMe ? h('button', { class: 'pf-av-plus', type: 'button', 'aria-label': 'إضافة حالة', onclick: () => pick('image/*,video/*', true) }, icon('plus', 14)) : null));
 
   box.append(h('div', { class: 'pf-head' }, av,
     h('div', { class: 'pf-stats' }, stat(nPosts, 'منشورات', () => document.querySelector('.pf-tabs')?.scrollIntoView({ behavior: 'smooth' })),
