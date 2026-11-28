@@ -100,6 +100,23 @@ export const bus = new EventTarget();
 export const emit = (name, detail) => bus.dispatchEvent(new CustomEvent(name, { detail }));
 export let rt = null;
 let inbox = null;
+async function acknowledgeDelivered(message) {
+  if (!state.me || !message?.id || message.receiver_id !== state.me.id || message.delivered_at) return;
+  try {
+    await sb.from('messages').update({ delivered_at: new Date().toISOString() })
+      .eq('id', message.id).is('delivered_at', 'null');
+  } catch { /* retry when the message is loaded again */ }
+}
+async function flushPendingDeliveries() {
+  if (!state.me) return;
+  try {
+    const rows = await sb.from('messages').select('id')
+      .eq('receiver_id', state.me.id).is('delivered_at', 'null')
+      .limit(100);
+    if (rows.length) await sb.from('messages').update({ delivered_at: new Date().toISOString() })
+      .in('id', rows.map((m) => m.id)).is('delivered_at', 'null');
+  } catch { /* retry on the next connection */ }
+}
 export function startRealtime() {
   if (rt || !state.me) return;
   const me = state.me.id;
@@ -116,7 +133,7 @@ export function startRealtime() {
     { event: 'INSERT', table: 'live_signals', filter: `to_id=eq.${me}` },
     { event: 'INSERT', table: 'lives' }, { event: 'UPDATE', table: 'lives' },
   ] })
-    .onPg('INSERT', 'messages', (d) => emit('rt:message', d.record))
+    .onPg('INSERT', 'messages', (d) => { emit('rt:message', d.record); acknowledgeDelivered(d.record); })
     .onPg('UPDATE', 'messages', (d) => emit('rt:message-update', d.record))
     .onPg('INSERT', 'notifications', (d) => emit('rt:notification', d.record))
     .onPg('INSERT', 'calls', (d) => emit('rt:call', d.record))
@@ -124,7 +141,7 @@ export function startRealtime() {
     .onPg('INSERT', 'call_signals', (d) => emit('rt:signal', d.record))
     .onPg('INSERT', 'live_signals', (d) => emit('rt:live-signal', d.record))
     .onPg('INSERT', 'lives', (d) => emit('rt:live', d.record)).onPg('UPDATE', 'lives', (d) => emit('rt:live', d.record))
-    .onReady(() => emit('rt:ready')).subscribe();
+    .onReady(() => { emit('rt:ready'); flushPendingDeliveries(); }).subscribe();
   rt.onStatus((s) => emit('rt:status', s));
   rt.connect();
 }
