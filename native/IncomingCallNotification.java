@@ -75,7 +75,6 @@ public final class IncomingCallNotification {
         if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter(46000);
 
         Notification notification = builder.build();
-        if (Build.VERSION.SDK_INT >= 21) notification.flags |= Notification.FLAG_INSISTENT;
         manager.notify(TAG, NOTIFICATION_ID, notification);
     }
 }
