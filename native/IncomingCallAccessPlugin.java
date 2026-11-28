@@ -14,6 +14,22 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "IncomingCallAccess")
 public class IncomingCallAccessPlugin extends Plugin {
     @PluginMethod
+    public void getPendingCall(PluginCall call) {
+        JSObject result = new JSObject();
+        Intent intent = getActivity() == null ? null : getActivity().getIntent();
+        String callId = intent == null ? null : intent.getStringExtra("m17_incoming_call_id");
+        if (callId != null && !callId.isEmpty()) {
+            result.put("callId", callId);
+            result.put("kind", intent.getStringExtra("m17_incoming_call_type"));
+            result.put("callerId", intent.getStringExtra("m17_incoming_caller_id"));
+            intent.removeExtra("m17_incoming_call_id");
+            intent.removeExtra("m17_incoming_call_type");
+            intent.removeExtra("m17_incoming_caller_id");
+        }
+        call.resolve(result);
+    }
+
+    @PluginMethod
     public void checkAndRequest(PluginCall call) {
         boolean allowed = Build.VERSION.SDK_INT < 34;
         if (Build.VERSION.SDK_INT >= 34) {
