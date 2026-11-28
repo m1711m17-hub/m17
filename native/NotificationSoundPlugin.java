@@ -1,6 +1,7 @@
 package com.m17.social;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.NotificationChannel;
 import android.media.NotificationManager;
@@ -64,6 +65,11 @@ public class NotificationSoundPlugin extends Plugin {
             }
             String hash = sha256(bytes).substring(0, 12);
             String ext = mime.contains("wav") ? ".wav" : mime.contains("ogg") ? ".ogg" : mime.contains("mp4") || mime.contains("m4a") ? ".m4a" : ".mp3";
+            String channelId = (kind.equals("call") ? "m17_calls_custom_" : "m17_default_custom_") + hash;
+            NotificationManager manager = (NotificationManager) getContext().getSystemService(NotificationManager.class);
+            if (Build.VERSION.SDK_INT >= 26 && manager != null && manager.getNotificationChannel(channelId) != null) {
+                JSObject existing = new JSObject(); existing.put("channelId", channelId); call.resolve(existing); return;
+            }
             String name = "NEXORA_" + hash + ext;
             ContentValues values = new ContentValues();
             values.put(MediaStore.Audio.Media.DISPLAY_NAME, name);
@@ -79,7 +85,7 @@ public class NotificationSoundPlugin extends Plugin {
                 out.write(bytes);
                 out.flush();
             }
-            String channelId = (kind.equals("call") ? "m17_calls_custom_" : "m17_default_custom_") + hash;
+            try { getContext().grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) {}
             createChannel(channelId, kind, uri);
             JSObject result = new JSObject();
             result.put("channelId", channelId);
