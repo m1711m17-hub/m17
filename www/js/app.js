@@ -79,7 +79,7 @@ async function route() {
 function restoreRoute() {
   try {
     const r = JSON.parse(localStorage.getItem('m17.route') || 'null');
-    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|explore|profile|notifications|settings|ai)/.test(r.h)) return r.h;
+    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|explore|profile|notifications|settings|ai|store)/.test(r.h)) return r.h;
   } catch {}
   return null;
 }
