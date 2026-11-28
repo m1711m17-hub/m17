@@ -11,7 +11,7 @@ function hideReel(id) { try { const s = hiddenReels(); s.add(id); localStorage.s
 // TikTok-style share sheet: people (in-app DM) / apps / actions.
 export function sharePostSheet(post, { onShared, onHidden } = {}) {
   const a = post.author || {};
-  const text = `شاهد ${post.media_type === 'video' ? 'هذا الفيديو' : 'هذا المنشور'} على NEXORA من @${a.username || ''}` + (post.body ? `\n«${post.body.slice(0, 120)}»` : '') + `\nحمّل التطبيق: ${APK}`;
+  // Use the actual public media URL as the share target. This opens the video directly\n  // in a browser/player and avoids copying an app-only deep link or promotional text.\n  const shareUrl = post.media_url || APK;\n  const text = `شاهد ${post.media_type === 'video' ? 'هذا الفيديو' : 'هذا المنشور'} على NEXORA من @${a.username || ''}` + (post.body ? `\\n«${post.body.slice(0, 120)}»` : '') + `\\n${shareUrl}`;
   let counted = post.shared;
   const count = async () => { if (counted) return; counted = true; try { await sb.from('shares').insert({ post_id: post.id, user_id: state.me.id }); post.shared = true; post.nShares++; onShared?.(); } catch {} };
 
@@ -30,7 +30,7 @@ export function sharePostSheet(post, { onShared, onHidden } = {}) {
         btn.onclick = async () => {
           if (btn.dataset.sent) return; btn.disabled = true;
           try {
-            await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: p.id, body: `${post.media_type === 'video' ? '🎬' : '📝'} nexora://post/${post.id}\n${post.body ? post.body.slice(0, 100) : ''}`.trim() });
+            await sb.from('messages').insert({ sender_id: state.me.id, receiver_id: p.id, body: `${post.media_type === 'video' ? '🎬' : '📝'} ${shareUrl}\n${post.body ? post.body.slice(0, 100) : ''}`.trim() });
             btn.dataset.sent = '1'; btn.classList.add('sent'); toast('تم الإرسال إلى ' + (p.display_name || p.username), 'ok'); count();
           } catch (e) { toast(e.message, 'err'); }
           btn.disabled = false;
@@ -55,12 +55,12 @@ export function sharePostSheet(post, { onShared, onHidden } = {}) {
     const enc = encodeURIComponent;
     const apps = h('div', { class: 'share-row apps' },
       app('واتساب', icon('chat', 26), 'wa', () => openExternal('https://wa.me/?text=' + enc(text))),
-      app('تيليجرام', icon('send', 26), 'tg', () => openExternal('https://t.me/share/url?url=' + enc(APK) + '&text=' + enc(text.split('\n')[0]))),
-      app('فيسبوك', icon('share', 26), 'fb', () => openExternal('https://www.facebook.com/sharer/sharer.php?u=' + enc(APK))),
+      app('تيليجرام', icon('send', 26), 'tg', () => openExternal('https://t.me/share/url?url=' + enc(shareUrl) + '&text=' + enc(text.split('\n')[0]))),
+      app('فيسبوك', icon('share', 26), 'fb', () => openExternal('https://www.facebook.com/sharer/sharer.php?u=' + enc(shareUrl))),
       app('رسالة SMS', icon('comment', 26), 'sms', () => { location.href = 'sms:?body=' + enc(text); }),
       app('البريد', icon('mail', 26), 'mail', () => { location.href = 'mailto:?subject=' + enc('NEXORA') + '&body=' + enc(text); }),
-      app('نسخ الرابط', icon('link', 26), 'copy', async () => { try { await navigator.clipboard.writeText(text); toast('تم النسخ', 'ok'); } catch { toast('تعذّر النسخ', 'err'); } }),
-      app('المزيد', icon('more', 26), 'more', () => { if (navigator.share) navigator.share({ text }).catch(() => {}); else toast('المشاركة غير مدعومة على هذا الجهاز'); }));
+      app('نسخ الرابط', icon('link', 26), 'copy', async () => { try { await navigator.clipboard.writeText(shareUrl); toast('تم نسخ رابط الفيديو', 'ok'); } catch { try { const input = h('textarea', { readonly: true, value: shareUrl }); document.body.append(input); input.select(); document.execCommand('copy'); input.remove(); toast('تم نسخ رابط الفيديو', 'ok'); } catch { toast('تعذّر النسخ', 'err'); } } }),
+      app('المزيد', icon('more', 26), 'more', () => { if (navigator.share) navigator.share({ title: 'NEXORA', text: text.split('\\n')[0], url: shareUrl }).catch(() => {}); else toast('المشاركة غير مدعومة على هذا الجهاز'); }));
 
     const act = (label, ic, fn) => h('button', { class: 'share-item', type: 'button', onclick: fn }, h('span', { class: 'share-ic act' }, ic), h('span', { class: 'share-name' }, label));
     const actions = h('div', { class: 'share-row actions' },
