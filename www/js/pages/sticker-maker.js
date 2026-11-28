@@ -135,7 +135,7 @@ export function openStickerMaker({ onSave }) {
       return { b, k, w: Math.max(2, Math.round(bw * k)), h: Math.max(2, Math.round(bh * k)), sx: (b.x0 - ox) / sc, sy: (b.y0 - oy) / sc, sw: bw / sc, sh: bh / sc };
     }
     function renderTo(canvas, g) {
-      const c = canvas.getContext('2d', { willReadFrequently: true }); c.clearRect(0, 0, g.w, g.h); c.save();
+      const c = canvas.getContext('2d', { willReadFrequently: true }); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.clearRect(0, 0, g.w, g.h); c.save();
       if (mode !== 'full') { path(c, (p) => ({ x: (p.x - g.b.x0) * g.k, y: (p.y - g.b.y0) * g.k })); c.clip(); }
       c.drawImage(media.el, g.sx, g.sy, g.sw, g.sh, 0, 0, g.w, g.h); c.restore();
     }
@@ -150,20 +150,21 @@ export function openStickerMaker({ onSave }) {
         let blob, anim = false;
         if (media.kind === 'image' || !animated) {
           if (media.kind === 'video') await seek(media.el, start);
-          const g = geometry(256), out = h('canvas', { width: g.w, height: g.h }); renderTo(out, g);
+          let g = geometry(512), out = h('canvas', { width: g.w, height: g.h }); renderTo(out, g);
           blob = await toBlob(out, 'image/png');
+          if (blob && blob.size > 1.8 * 1024 * 1024) { g = geometry(360); out = h('canvas', { width: g.w, height: g.h }); renderTo(out, g); blob = await toBlob(out, 'image/png'); }
         } else {
           anim = true;
-          const fps = 10, n = Math.max(5, Math.round(len * fps)), g = geometry(220), frames = [];
+          const fps = 12, n = Math.max(6, Math.round(len * fps)), g = geometry(300), frames = [];
           for (let i = 0; i < n; i++) {
             saveBtn.textContent = `جارٍ الإنشاء ${i + 1}/${n}`;
             await seek(media.el, start + i / fps);
             const out = h('canvas', { width: g.w, height: g.h }); renderTo(out, g); frames.push(out);
           }
-          let sizeSide = 220, bytes;
+          let sizeSide = 300, bytes;
           for (let attempt = 0; attempt < 3; attempt++) {
-            const k = sizeSide / 220, w = Math.max(2, Math.round(g.w * k)), hh = Math.max(2, Math.round(g.h * k));
-            const data = frames.map((cnv) => { if (k === 1) return cnv.getContext('2d').getImageData(0, 0, g.w, g.h).data; const t = h('canvas', { width: w, height: hh }); t.getContext('2d', { willReadFrequently: true }).drawImage(cnv, 0, 0, w, hh); return t.getContext('2d').getImageData(0, 0, w, hh).data; });
+            const k = sizeSide / 300, w = Math.max(2, Math.round(g.w * k)), hh = Math.max(2, Math.round(g.h * k));
+            const data = frames.map((cnv) => { if (k === 1) return cnv.getContext('2d').getImageData(0, 0, g.w, g.h).data; const t = h('canvas', { width: w, height: hh }); const tc = t.getContext('2d', { willReadFrequently: true }); tc.imageSmoothingQuality = 'high'; tc.drawImage(cnv, 0, 0, w, hh); return t.getContext('2d').getImageData(0, 0, w, hh).data; });
             bytes = encodeGif(data, w, hh, Math.round(100 / fps));
             if (bytes.length <= 1.9 * 1024 * 1024) break;
             sizeSide = Math.round(sizeSide * 0.75);

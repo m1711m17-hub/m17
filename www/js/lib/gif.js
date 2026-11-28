@@ -71,6 +71,27 @@ function lzw(idx) {
   return out;
 }
 
+// Floyd–Steinberg dithering to the shared palette (smooth gradients instead of banding / blocks).
+function quantize(f, w, h, lut, pal) {
+  const idx = new Uint8Array(w * h);
+  const buf = new Float32Array(w * h * 3);
+  for (let i = 0; i < w * h; i++) { buf[i * 3] = f[i * 4]; buf[i * 3 + 1] = f[i * 4 + 1]; buf[i * 3 + 2] = f[i * 4 + 2]; }
+  const clampB = (v) => (v < 0 ? 0 : v > 255 ? 255 : v);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (f[i * 4 + 3] < 128) { idx[i] = 255; continue; }
+      const r = clampB(buf[i * 3]), g = clampB(buf[i * 3 + 1]), b = clampB(buf[i * 3 + 2]);
+      const k = lut[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)]; idx[i] = k;
+      const er = r - pal[k * 3], eg = g - pal[k * 3 + 1], eb = b - pal[k * 3 + 2];
+      const add = (j, wt) => { buf[j * 3] += er * wt; buf[j * 3 + 1] += eg * wt; buf[j * 3 + 2] += eb * wt; };
+      if (x + 1 < w) add(i + 1, 7 / 16);
+      if (y + 1 < h) { if (x > 0) add(i + w - 1, 3 / 16); add(i + w, 5 / 16); if (x + 1 < w) add(i + w + 1, 1 / 16); }
+    }
+  }
+  return idx;
+}
+
 export function encodeGif(frames, w, h, delayCs = 10) {
   const { pal, lut } = buildPalette(frames, w, h);
   const bytes = [];
@@ -79,14 +100,15 @@ export function encodeGif(frames, w, h, delayCs = 10) {
   u16(w); u16(h); bytes.push(0xF7, 0, 0);           // global colour table, 256 entries
   for (let i = 0; i < 768; i++) bytes.push(pal[i]);
   bytes.push(0x21, 0xFF, 0x0B, ...'NETSCAPE2.0'.split('').map((c) => c.charCodeAt(0)), 3, 1, 0, 0, 0); // loop forever
+  let prev = null;
   for (const f of frames) {
-    bytes.push(0x21, 0xF9, 4, 0x09, delayCs & 255, (delayCs >> 8) & 255, 255, 0); // disposal 2 + transparent idx 255
+    bytes.push(0x21, 0xF9, 4, 0x05, delayCs & 255, (delayCs >> 8) & 255, 255, 0); // keep previous frame + transparent idx 255
     bytes.push(0x2C); u16(0); u16(0); u16(w); u16(h); bytes.push(0);
-    const idx = new Uint8Array(w * h);
-    for (let i = 0; i < w * h; i++) {
-      const o = i * 4;
-      idx[i] = f[o + 3] < 128 ? 255 : lut[((f[o] >> 3) << 10) | ((f[o + 1] >> 3) << 5) | (f[o + 2] >> 3)];
-    }
+    const full = quantize(f, w, h, lut, pal);
+    const idx = new Uint8Array(full);
+    // unchanged pixels become "transparent" so they keep the previous frame (much smaller files)
+    if (prev) for (let i = 0; i < idx.length; i++) if (idx[i] === prev[i]) idx[i] = 255;
+    prev = full;
     bytes.push(8);
     const data = lzw(idx);
     for (let i = 0; i < data.length; i += 255) { const n = Math.min(255, data.length - i); bytes.push(n); for (let j = 0; j < n; j++) bytes.push(data[i + j]); }
