@@ -326,8 +326,12 @@ async function recoverNativeIncomingCall() {
     const pending = await access.getPendingCall();
     if (!pending?.callId) return;
     const call = await sb.from('calls').select('*').eq('id', pending.callId).eq('callee_id', state.me.id).one();
-    if (call?.status === 'ringing') await onIncoming(call);
-    else checkIncoming();
+    if (call?.status === 'ringing') {
+      await onIncoming(call);
+      const session = cur?.callId === call.id ? cur : null;
+      if (session && pending.action === 'answer') await acceptCall(session);
+      else if (session && pending.action === 'reject') await hangup(session, 'تم رفض المكالمة');
+    } else checkIncoming();
   } catch (e) {
     console.warn('[NEXORA calls] Native incoming-call recovery failed', e);
     checkIncoming();
