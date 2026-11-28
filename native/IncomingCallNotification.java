@@ -24,7 +24,7 @@ public final class IncomingCallNotification {
         if (callId == null || callId.isEmpty()) return;
 
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (activityManager != null) {
+        if (activityManager != null && activityManager.getRunningAppProcesses() != null) {
             for (ActivityManager.RunningAppProcessInfo process : activityManager.getRunningAppProcesses()) {
                 if (context.getPackageName().equals(process.processName)
                     && process.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return;
@@ -67,7 +67,7 @@ public final class IncomingCallNotification {
             .setCategory(Notification.CATEGORY_CALL)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setPriority(Notification.PRIORITY_MAX)
-            .setOngoing(true)
+            .setOngoing(false)
             .setAutoCancel(true)
             .setShowWhen(true)
             .setContentIntent(content)
