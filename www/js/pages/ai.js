@@ -27,6 +27,18 @@ export async function aiPage(root) {
     quick, feed, status, composer);
   root.append(headerBar('NEXORA', { back: true }), page);
 
+  // Keep the composer above Android/iOS soft keyboards inside Capacitor WebView.
+  const viewport = window.visualViewport;
+  const syncKeyboard = () => {
+    if (!viewport) return;
+    const keyboardHeight = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+    page.style.setProperty('--ai-keyboard', keyboardHeight + 'px');
+  };
+  syncKeyboard();
+  viewport?.addEventListener('resize', syncKeyboard);
+  viewport?.addEventListener('scroll', syncKeyboard);
+  window.addEventListener('resize', syncKeyboard);
+
   function resize() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; }
   function bubble(role, text) {
     const item = h('article', { class: 'ai-message ' + (role === 'user' ? 'mine' : 'bot') });
@@ -84,5 +96,5 @@ export async function aiPage(root) {
   send.addEventListener('click', submit);
   input.addEventListener('input', resize);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
-  return () => { busy = false; };
+  return () => { busy = false; viewport?.removeEventListener('resize', syncKeyboard); viewport?.removeEventListener('scroll', syncKeyboard); window.removeEventListener('resize', syncKeyboard); };
 }
