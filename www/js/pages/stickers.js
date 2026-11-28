@@ -21,12 +21,13 @@ export const dropStickerCache = () => { cache = null; };
 const BASE = SUPABASE_URL + '/storage/v1/object/public/stickers/';
 // A chat message stores a custom sticker as "u:<public url>". Only our own storage bucket is trusted.
 export const customStickerUrl = (s) => (typeof s === 'string' && s.startsWith('u:') && s.slice(2).startsWith(BASE) && s.length < 700 ? s.slice(2) : null);
-const isAnimated = (u) => /\.gif($|\?)/i.test(u);
+const isAnimated = (u) => /\.(gif|webp)($|\?)/i.test(u);
 
 export async function saveCustomSticker(blob, animated) {
-  const ext = animated ? 'gif' : 'png';
+  const mime = animated && blob?.type === 'image/webp' ? 'image/webp' : animated ? 'image/gif' : 'image/png';
+  const ext = mime === 'image/webp' ? 'webp' : mime === 'image/gif' ? 'gif' : 'png';
   const path = `${state.me.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const url = await sb.storage.upload('stickers', path, new File([blob], 'sticker.' + ext, { type: animated ? 'image/gif' : 'image/png' }));
+  const url = await sb.storage.upload('stickers', path, new File([blob], 'sticker.' + ext, { type: mime }));
   await addCustom(url, animated, true);
   return url;
 }
