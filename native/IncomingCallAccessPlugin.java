@@ -22,9 +22,11 @@ public class IncomingCallAccessPlugin extends Plugin {
             result.put("callId", callId);
             result.put("kind", intent.getStringExtra("m17_incoming_call_type"));
             result.put("callerId", intent.getStringExtra("m17_incoming_caller_id"));
+            result.put("action", intent.getStringExtra("m17_incoming_action"));
             intent.removeExtra("m17_incoming_call_id");
             intent.removeExtra("m17_incoming_call_type");
             intent.removeExtra("m17_incoming_caller_id");
+            intent.removeExtra("m17_incoming_action");
         }
         call.resolve(result);
     }
