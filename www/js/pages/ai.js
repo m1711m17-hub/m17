@@ -27,12 +27,17 @@ export async function aiPage(root) {
     quick, feed, status, composer);
   root.append(headerBar('NEXORA', { back: true }), page);
 
-  // Keep the composer above Android/iOS soft keyboards inside Capacitor WebView.
+  // Give the AI screen a dedicated flex viewport so the composer and feed
+  // resize together when Android/iOS opens the soft keyboard.
+  root.classList.add('ai-view');
   const viewport = window.visualViewport;
   const syncKeyboard = () => {
-    if (!viewport) return;
-    const keyboardHeight = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-    page.style.setProperty('--ai-keyboard', keyboardHeight + 'px');
+    const visibleHeight = viewport?.height || window.innerHeight;
+    const keyboardHeight = Math.max(0, window.innerHeight - visibleHeight - (viewport?.offsetTop || 0));
+    root.style.height = visibleHeight + 'px';
+    root.style.setProperty('--ai-bottom-space', keyboardHeight > 80
+      ? 'calc(var(--safe-b) + 8px)'
+      : 'calc(var(--tab) + var(--safe-b) + 20px)');
   };
   syncKeyboard();
   viewport?.addEventListener('resize', syncKeyboard);
@@ -96,5 +101,13 @@ export async function aiPage(root) {
   send.addEventListener('click', submit);
   input.addEventListener('input', resize);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
-  return () => { busy = false; viewport?.removeEventListener('resize', syncKeyboard); viewport?.removeEventListener('scroll', syncKeyboard); window.removeEventListener('resize', syncKeyboard); };
+  return () => {
+    busy = false;
+    viewport?.removeEventListener('resize', syncKeyboard);
+    viewport?.removeEventListener('scroll', syncKeyboard);
+    window.removeEventListener('resize', syncKeyboard);
+    root.classList.remove('ai-view');
+    root.style.removeProperty('height');
+    root.style.removeProperty('--ai-bottom-space');
+  };
 }
