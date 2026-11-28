@@ -54,10 +54,17 @@ jobs:
         run: |
           D=android/app/src/main/java/com/m17/social
           mkdir -p $D
-          for F in native/*.java; do [ "$(basename "$F")" = "IncomingCallNotification.java" ] || cp "$F" "$D/"; done
+          for F in native/*.java; do
+            B=$(basename "$F")
+            [ "$B" = "IncomingCallNotification.java" ] && continue
+            [ "$B" = "IncomingCallActivity.java" ] && continue
+            cp "$F" "$D/"
+          done
+          P=node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications
+          cp native/IncomingCallActivity.java "$P/IncomingCallActivity.java"
           ls $D
           M=android/app/src/main/AndroidManifest.xml
-          sed -i '/<\/application>/i\    <activity android:name=".IncomingCallActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />' $M
+          sed -i '/<\/application>/i\    <activity android:name="com.capacitorjs.plugins.pushnotifications.IncomingCallActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:showWhenLocked="true" android:turnScreenOn="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />' $M
           grep -n "IncomingCallActivity" $M
       - name: Version stamp (so installed apps can detect newer builds)
         run: |
