@@ -24,7 +24,8 @@ export const customStickerUrl = (s) => (typeof s === 'string' && s.startsWith('u
 const isAnimated = (u) => /\.(gif|webp)($|\?)/i.test(u);
 
 export async function saveCustomSticker(blob, animated) {
-  const mime = animated && blob?.type === 'image/webp' ? 'image/webp' : animated ? 'image/gif' : 'image/png';
+  const supported = ['image/gif', 'image/webp', 'image/png'];
+  const mime = animated && supported.includes(blob?.type) ? blob.type : animated ? 'image/gif' : 'image/png';
   const ext = mime === 'image/webp' ? 'webp' : mime === 'image/gif' ? 'gif' : 'png';
   const path = `${state.me.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const url = await sb.storage.upload('stickers', path, new File([blob], 'sticker.' + ext, { type: mime }));
