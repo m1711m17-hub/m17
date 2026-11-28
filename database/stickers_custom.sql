@@ -18,3 +18,13 @@ create policy "saved_stickers own insert" on public.saved_stickers for insert to
 create policy "saved_stickers own delete" on public.saved_stickers for delete to authenticated using (user_id = auth.uid());
 revoke all on public.saved_stickers from anon;
 grant select, insert, delete on public.saved_stickers to authenticated;
+
+-- Fix: custom sticker message = 'u:<public url>' (~138 chars) exceeded the old 120-char limit.
+alter table public.messages drop constraint if exists messages_sticker_check;
+alter table public.messages add constraint messages_sticker_check check (
+  sticker is null or char_length(sticker) <= 120
+  or (sticker like 'u:%/storage/v1/object/public/stickers/%' and char_length(sticker) <= 700));
+alter table public.group_messages drop constraint if exists group_messages_sticker_check;
+alter table public.group_messages add constraint group_messages_sticker_check check (
+  sticker is null or char_length(sticker) <= 120
+  or (sticker like 'u:%/storage/v1/object/public/stickers/%' and char_length(sticker) <= 700));
