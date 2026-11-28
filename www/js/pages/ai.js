@@ -21,9 +21,7 @@ export async function aiPage(root) {
     ['📝 لخّص نصاً', 'لخّص النص التالي بنقاط واضحة: '],
   ];
   suggestions.forEach(([label, prompt]) => quick.append(h('button', { class: 'chip', type: 'button', onclick: () => { input.value = prompt; input.focus(); resize(); } }, label)));
-  page.append(h('div', { class: 'ai-hero' },
-    h('div', { class: 'ai-orb' }, icon('bolt', 30))),
-    quick, feed, status, composer);
+  page.append(quick, feed, status, composer);
   root.append(headerBar('NEXORA', { back: true }), page);
 
   // Give the AI screen a dedicated flex viewport so the composer and feed
