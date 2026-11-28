@@ -32,7 +32,7 @@ export function openStickerMaker({ onSave }) {
       urlToFree = URL.createObjectURL(f);
       if (f.type.startsWith('image/')) {
         const img = new Image(); img.src = urlToFree; await img.decode();
-        media = { kind: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight };
+        media = { kind: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, sourceBlob: f, isGif: f.type === 'image/gif' || /\.gif$/i.test(f.name) };
       } else if (f.type.startsWith('video/')) {
         const v = h('video', { muted: true, playsinline: true, preload: 'auto', loop: false }); v.muted = true;
         v.src = urlToFree;
@@ -51,7 +51,7 @@ export function openStickerMaker({ onSave }) {
     const cv = h('canvas', { class: 'sm-canvas', width: BOX * dpr, height: BOX * dpr, style: { width: BOX + 'px', height: BOX + 'px' } });
     const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
     let mode = 'full', lasso = [], box = null, drawing = false;
-    let start = 0, len = Math.min(2, media.dur || 2), animated = media.kind === 'video';
+    let start = 0, len = Math.min(2, media.dur || 2), animated = media.kind === 'video' || !!media.isGif;
     const MEDIA_RECT = { x0: ox, y0: oy, x1: ox + ow0, y1: oy + oh0 };
 
     const clamp = (p) => ({ x: Math.max(MEDIA_RECT.x0, Math.min(MEDIA_RECT.x1, p.x)), y: Math.max(MEDIA_RECT.y0, Math.min(MEDIA_RECT.y1, p.y)) });
@@ -115,7 +115,7 @@ export function openStickerMaker({ onSave }) {
     }
 
     function syncUi() {
-      hint.textContent = mode === 'full' ? 'سيتم استخدام الصورة كاملة. اختر "تحديد يدوي" لاقتطاع جزء منها.'
+      hint.textContent = media.isGif && mode !== 'full' ? 'للحفاظ على حركة GIF، استخدم الملصق كاملاً دون اقتطاع.' : mode === 'full' ? (media.isGif ? 'سيتم حفظ GIF الأصلي مع الحفاظ على الحركة.' : 'سيتم استخدام الصورة كاملة. اختر "تحديد يدوي" لاقتطاع جزء منها.')
         : mode === 'lasso' ? (maskReady() ? 'جاهز. أعد الرسم لتغيير التحديد.' : 'ارسم بإصبعك حول الشيء الذي تريد اقتطاعه.')
           : (maskReady() ? 'جاهز. اسحب من جديد لتغيير الحجم.' : 'اسحب على الصورة لتحديد المنطقة.');
       saveBtn.disabled = busy || !maskReady();
@@ -148,7 +148,10 @@ export function openStickerMaker({ onSave }) {
       const label = saveBtn.textContent;
       try {
         let blob, anim = false;
-        if (media.kind === 'image' || !animated) {
+        if (media.kind === 'image' && media.isGif) {
+          if (mode !== 'full') throw new Error('للحفاظ على حركة GIF، اختر وضع كامل دون اقتطاع');
+          blob = media.sourceBlob; anim = true;
+        } else if (media.kind === 'image' || !animated) {
           if (media.kind === 'video') await seek(media.el, start);
           let g = geometry(512), out = h('canvas', { width: g.w, height: g.h }); renderTo(out, g);
           blob = await toBlob(out, 'image/png');
