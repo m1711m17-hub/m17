@@ -24,3 +24,48 @@
 /* Keep the NEXORA conversation pinned below the messages toolbar */
 .messages-page .user-row.conv.ai-conv{position:sticky;top:calc(66px + var(--safe-t, 0px));z-index:19;margin:0 0 10px;background:linear-gradient(105deg,rgba(12,22,55,.99),rgba(31,10,57,.99));border-color:rgba(174,91,255,.65);box-shadow:0 8px 22px rgba(0,0,0,.42),0 0 17px rgba(149,57,255,.22);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .messages-page .user-row.conv.ai-conv:active{transform:none}
+
+
+/* Responsive AI screen layout: keep the chat feed and composer inside the
+   visible app viewport, including when the mobile keyboard is open. */
+.ai-view{
+  display:flex;
+  flex-direction:column;
+  height:100dvh;
+  min-height:0;
+  padding-bottom:0;
+  overflow:hidden;
+}
+.ai-view>.topbar{flex:none}
+.ai-view>.ai-page{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  height:auto;
+  padding-bottom:var(--ai-bottom-space,calc(var(--tab) + var(--safe-b) + 20px));
+  overflow:hidden;
+}
+.ai-page>.ai-hero,.ai-page>.ai-quick,.ai-page>.ai-status,.ai-page>.ai-composer{flex:none}
+.ai-page>.ai-feed{
+  flex:1 1 0;
+  min-height:0;
+  max-height:none;
+  height:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.ai-page>.ai-composer{
+  position:relative;
+  inset:auto;
+  width:100%;
+  margin:0;
+}
+.ai-page>.ai-status{padding:2px 0}
+.ai-page .ai-input{min-width:0;width:100%;max-width:100%;margin:0}
+@media(max-width:390px){
+  .ai-page>.ai-feed{max-height:none;min-height:0}
+  .ai-page>.ai-message{max-width:94%}
+}
