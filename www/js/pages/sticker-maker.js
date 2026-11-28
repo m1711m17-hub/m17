@@ -32,7 +32,7 @@ export function openStickerMaker({ onSave }) {
       urlToFree = URL.createObjectURL(f);
       if (f.type.startsWith('image/')) {
         const img = new Image(); img.src = urlToFree; await img.decode();
-        media = { kind: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, sourceBlob: f, isGif: f.type === 'image/gif' || /\.gif$/i.test(f.name) };
+        media = { kind: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, sourceBlob: f, isGif: f.type === 'image/gif' || f.type === 'image/webp' || /\.(gif|webp)$/i.test(f.name) };
       } else if (f.type.startsWith('video/')) {
         const v = h('video', { muted: true, playsinline: true, preload: 'auto', loop: false }); v.muted = true;
         v.src = urlToFree;
@@ -115,7 +115,7 @@ export function openStickerMaker({ onSave }) {
     }
 
     function syncUi() {
-      hint.textContent = media.isGif && mode !== 'full' ? 'للحفاظ على حركة GIF، استخدم الملصق كاملاً دون اقتطاع.' : mode === 'full' ? (media.isGif ? 'سيتم حفظ GIF الأصلي مع الحفاظ على الحركة.' : 'سيتم استخدام الصورة كاملة. اختر "تحديد يدوي" لاقتطاع جزء منها.')
+      hint.textContent = media.isGif && mode !== 'full' ? 'للحفاظ على حركة GIF أو WebP، استخدم الملصق كاملاً دون اقتطاع.' : mode === 'full' ? (media.isGif ? 'سيتم حفظ الملف المتحرك الأصلي مع الحفاظ على الحركة.' : 'سيتم استخدام الصورة كاملة. اختر "تحديد يدوي" لاقتطاع جزء منها.')
         : mode === 'lasso' ? (maskReady() ? 'جاهز. أعد الرسم لتغيير التحديد.' : 'ارسم بإصبعك حول الشيء الذي تريد اقتطاعه.')
           : (maskReady() ? 'جاهز. اسحب من جديد لتغيير الحجم.' : 'اسحب على الصورة لتحديد المنطقة.');
       saveBtn.disabled = busy || !maskReady();
@@ -149,7 +149,7 @@ export function openStickerMaker({ onSave }) {
       try {
         let blob, anim = false;
         if (media.kind === 'image' && media.isGif) {
-          if (mode !== 'full') throw new Error('للحفاظ على حركة GIF، اختر وضع كامل دون اقتطاع');
+          if (mode !== 'full') throw new Error('للحفاظ على حركة GIF أو WebP، اختر وضع كامل دون اقتطاع');
           blob = media.sourceBlob; anim = true;
         } else if (media.kind === 'image' || !animated) {
           if (media.kind === 'video') await seek(media.el, start);
