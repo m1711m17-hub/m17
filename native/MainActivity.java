@@ -1,5 +1,6 @@
 package com.m17.social;
 
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,6 +10,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     private void prepareIncomingCallWindow(Intent intent) {
         if (intent == null || !intent.hasExtra("m17_incoming_call_id")) return;
+        NotificationManager notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (notifications != null) notifications.cancel("m17_incoming_call", 17017);
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
