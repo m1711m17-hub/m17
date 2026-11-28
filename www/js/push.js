@@ -35,12 +35,11 @@ export async function applyNotificationSound(kind) {
 async function syncNotificationChannels() {
   const token = store.get();
   if (!token || !sb.session?.access_token) return;
-  const { error } = await sb.rpc('set_device_notification_channels', {
+  await sb.rpc('set_device_notification_channels', {
     p_token: token,
     p_message_channel: getChannel('message'),
     p_call_channel: getChannel('call'),
   });
-  if (error) throw error;
 }
 
 async function openFromPush(data) {
