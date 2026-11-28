@@ -69,3 +69,13 @@
   .ai-page>.ai-feed{max-height:none;min-height:0}
   .ai-page>.ai-message{max-width:94%}
 }
+
+
+/* Keep the NEXORA composer close to the mobile keyboard. The tab bar is
+   hidden on this screen, so do not reserve its height below the input. */
+.ai-view>.ai-page{
+  padding-bottom:calc(var(--safe-b) + 4px)!important;
+}
+.ai-page>.ai-composer{
+  margin-bottom:0!important;
+}
