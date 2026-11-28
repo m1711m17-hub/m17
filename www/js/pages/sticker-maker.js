@@ -5,8 +5,8 @@ import { encodeGif } from '../lib/gif.js';
 async function isAnimatedImageFile(file) {
   const name = String(file.name || '').toLowerCase();
   const type = String(file.type || '').toLowerCase();
-  if (type === 'image/gif' || type === 'image/webp' || /\\.(gif|webp)$/i.test(name)) return true;
-  if (type !== 'image/png' && !/\\.png$/i.test(name)) return false;
+  if (type === 'image/gif' || type === 'image/webp' || /\.(gif|webp)$/i.test(name)) return true;
+  if (type !== 'image/png' && !/\.png$/i.test(name)) return false;
   try {
     const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 2 * 1024 * 1024)).arrayBuffer());
     // APNG animation control chunk (acTL).
@@ -48,7 +48,7 @@ export function openStickerMaker({ onSave }) {
       urlToFree = URL.createObjectURL(f);
       if (f.type.startsWith('image/')) {
         const img = new Image(); img.src = urlToFree; await img.decode();
-        media = { kind: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, sourceBlob: f, isGif: f.type === 'image/gif' || f.type === 'image/webp' || /\.(gif|webp)$/i.test(f.name) };
+        media = { kind: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, sourceBlob: f, isGif: await isAnimatedImageFile(f) };
       } else if (f.type.startsWith('video/')) {
         const v = h('video', { muted: true, playsinline: true, preload: 'auto', loop: false }); v.muted = true;
         v.src = urlToFree;
