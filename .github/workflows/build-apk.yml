@@ -30,6 +30,8 @@ jobs:
             grep -q "android.permission.$P" $M || sed -i "/android.permission.INTERNET/a\\    <uses-permission android:name=\"android.permission.$P\" />" $M
           done
           grep -n "uses-permission" $M
+      - name: Generate native notification sound assets
+        run: node native/generate-notification-sounds.mjs
       - name: App icon + name
         run: |
           R=android/app/src/main/res
@@ -46,7 +48,7 @@ jobs:
           test -s www/js/vendor/livekit-client.esm.mjs
           grep -q 'Room' www/js/vendor/livekit-client.esm.mjs
           ls -lh www/js/vendor/livekit-client.esm.mjs
-      - name: Native plugins (audio route, update opener)
+      - name: Native plugins (audio route, notification sounds, update opener)
         run: |
           D=android/app/src/main/java/com/m17/social
           mkdir -p $D && cp native/*.java $D/
