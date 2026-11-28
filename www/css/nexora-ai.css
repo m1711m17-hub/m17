@@ -20,6 +20,7 @@
 .ai-conv{background:linear-gradient(100deg,rgba(43,20,83,.24),rgba(16,25,49,.12));border-bottom:1px solid rgba(169,103,255,.13)}
 .ai-chat-avatar{width:52px;height:52px;flex:none;border-radius:50%;display:grid;place-items:center;color:#fff;background:radial-gradient(circle at 35% 25%,#f0a8ff,#a33dff 48%,#5423a8);box-shadow:0 0 18px rgba(168,75,255,.38),inset 0 1px 5px #fff7}
 .ai-chat-tag{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:#d5a0ff;background:rgba(150,70,255,.16);border:1px solid rgba(190,125,255,.25);padding:3px 8px;border-radius:20px}
-.ai-list-fab{position:fixed;z-index:45;inset-inline-start:18px;bottom:calc(88px + var(--safe-b));width:58px;height:58px;border-radius:19px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#bd69ff,#7825d5 70%,#4d1d9b);border:1px solid rgba(235,195,255,.35);box-shadow:0 7px 24px rgba(126,40,218,.48),inset 0 1px 5px #fff5;transition:transform .18s,box-shadow .18s}
-.ai-list-fab:active{transform:scale(.92);box-shadow:0 3px 12px rgba(126,40,218,.35)}
-.ai-list-fab .ico{filter:drop-shadow(0 1px 5px #fff7)}
+
+/* Keep the NEXORA conversation pinned below the messages toolbar */
+.messages-page .user-row.conv.ai-conv{position:sticky;top:calc(66px + var(--safe-t, 0px));z-index:19;margin:0 0 10px;background:linear-gradient(105deg,rgba(12,22,55,.99),rgba(31,10,57,.99));border-color:rgba(174,91,255,.65);box-shadow:0 8px 22px rgba(0,0,0,.42),0 0 17px rgba(149,57,255,.22);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.messages-page .user-row.conv.ai-conv:active{transform:none}
