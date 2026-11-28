@@ -22,7 +22,7 @@ export async function aiPage(root) {
   ];
   suggestions.forEach(([label, prompt]) => quick.append(h('button', { class: 'chip', type: 'button', onclick: () => { input.value = prompt; input.focus(); resize(); } }, label)));
   root.append(headerBar('NEXORA AI', { back: true }), page.append(h('div', { class: 'ai-hero' },
-    h('div', { class: 'ai-orb' }, icon('sparkles', 30)),
+    h('div', { class: 'ai-orb' }, icon('bolt', 30)),
     h('div', null, h('b', null, 'مساعدك الذكي'), h('div', { class: 'muted small' }, 'اسأل، اكتب، ترجم، أو اطلب المساعدة'))),
     quick, feed, status, composer));
 
