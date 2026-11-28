@@ -62,7 +62,7 @@ async function route() {
   view = h('main', { class: 'view enter' });
   root.querySelector('.shell').prepend(view);
   tabbar.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === match.tab));
-  document.body.classList.toggle('in-chat', /^\/(chat|group)\//.test(path));
+  document.body.classList.toggle('in-chat', /^\/(chat|group)\//.test(path) || path === '/ai');
   window.scrollTo(0, 0);
   try {
     const c = await match.fn(view, { ...match.params, ...q }, ctx);
