@@ -23,3 +23,7 @@
 .sm-actions{width:100%;max-width:420px}
 .sm-save{width:100%}
 .sm-save:disabled{opacity:.5}
+
+/* stickers sit directly on the chat background: no bubble fill, border or shadow (beats the neon-glass bubble rules) */
+.bubble.bare,.bubble.me.bare,.bubble.them.bare{background:none;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.bubble.bare .b-meta{color:var(--muted);text-shadow:0 1px 3px rgba(0,0,0,.7)}

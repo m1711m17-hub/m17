@@ -299,6 +299,7 @@ export async function chatPage(root, params) {
     } else {
       if (m.story_id || m.story_preview) kids.push(h('div', { class: 'story-quote' }, m.story_preview ? h('img', { src: m.story_preview, alt: '' }) : null, h('span', null, mine ? 'رددت على حالة' : 'رد على حالتك')));
       if (m.sticker && customStickerUrl(m.sticker)) kids.push(customStickerBubble(customStickerUrl(m.sticker)));
+      else if (typeof m.sticker === 'string' && m.sticker.startsWith('u:')) kids.push(h('div', { class: 'muted small unsupported-sticker' }, 'ملصق غير مدعوم'));
       else if (m.sticker) { const st = stickerParts(m.sticker); kids.push(h('div', { class: 'sticker-msg', style: { '--sc': st.color || '#2f6bff' } }, h('span', { class: 'se' }, st.emoji), st.label ? h('span', { class: 'sl' }, st.label) : null)); }
       if (m.audio_url) kids.push(voiceBubble(m, { mine }));
       if (m.media_url) kids.push(m.media_type === 'video' ? h('video', { src: m.media_url, controls: true, playsinline: true, preload: 'metadata' }) : h('img', { src: m.media_url, alt: '', onclick: () => viewImage(m.media_url) }));
