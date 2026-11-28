@@ -34,7 +34,7 @@ export async function homePage(root) {
   async function loadMore() {
     if (loading) return; loading = true; more.disabled = true;
     try {
-      let q = sb.from('posts').select(POST_SELECT).in('author_id', [state.me.id, ...ids]).order('created_at', { ascending: false }).limit(PAGE);
+      let q = sb.from('posts').select(POST_SELECT).in('author_id', [state.me.id, ...ids]).or('media_type.is.null,media_type.neq.video').order('created_at', { ascending: false }).limit(PAGE);
       if (before) q = q.lt('created_at', before);
       const rows = await enrichPosts(await q);
       rows.forEach((p) => feed.append(postCard(p)));
