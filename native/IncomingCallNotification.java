@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import com.m17.social.IncomingCallActivity;
 import android.os.Build;
 import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
@@ -47,12 +48,13 @@ public final class IncomingCallNotification {
             manager.createNotificationChannel(channel);
         }
 
-        Intent launch = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
-        if (launch == null) return;
+        Intent launch = new Intent(context, IncomingCallActivity.class);
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         launch.putExtra("m17_incoming_call_id", callId);
         launch.putExtra("m17_incoming_call_type", data.get("kind"));
         launch.putExtra("m17_incoming_caller_id", data.get("actor_id"));
+        launch.putExtra("m17_incoming_title", data.getOrDefault("title", "مكالمة واردة"));
+        launch.putExtra("m17_incoming_body", data.getOrDefault("body", "لديك مكالمة واردة"));
 
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
