@@ -4,6 +4,7 @@ import { sb, state, loadMe, refreshBadges, bus, emit, rt, startRealtime, stopRea
 import { POLL_BADGE_MS } from './config.js';
 import { authPage } from './pages/auth.js';
 import { homePage } from './pages/home.js';
+import { aiPage } from './pages/ai.js';
 import { explorePage } from './pages/explore.js';
 import { composePage } from './pages/compose.js';
 import { messagesPage, chatPage } from './pages/messages.js';
@@ -77,7 +78,7 @@ async function route() {
 function restoreRoute() {
   try {
     const r = JSON.parse(localStorage.getItem('m17.route') || 'null');
-    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|explore|profile|notifications|settings)/.test(r.h)) return r.h;
+    if (r && Date.now() - r.t < 6 * 3600e3 && /^#\/(chat\/|group\/|groups|u\/|post\/|messages|explore|profile|notifications|settings|ai)/.test(r.h)) return r.h;
   } catch {}
   return null;
 }
@@ -141,7 +142,7 @@ CapApp?.addListener?.('backButton', () => {
   const sv = document.querySelector('.story-view'); if (sv) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
   const ov = [...document.querySelectorAll('.cam-screen,.call-screen,.live-screen,.lightbox,.pv-overlay,.sheet-back')].pop(); if (ov) { ov.dispatchEvent(new CustomEvent('m17:back', { bubbles: false })); if (ov.isConnected) ov.click(); return; }
   const path = parseHash().path;
-  if (/^\/(chat\/|group\/|groups|join\/|u\/|post\/|settings|admin|compose|notifications|calls)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
+  if (/^\/(chat\/|group\/|groups|join\/|u\/|post\/|settings|admin|compose|notifications|calls|ai)/.test(path)) { if (history.length > 1) history.back(); else location.hash = '#/home'; return; }
   if (path !== '/home') { location.hash = '#/home'; return; }
   CapApp.minimizeApp?.();
 });
