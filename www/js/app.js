@@ -21,7 +21,7 @@ import { checkForUpdates } from './update.js';
 
 const root = document.getElementById('root');
 const ROUTES = [
-  [/^\/home$/, 'home', homePage], [/^\/explore$/, 'explore', explorePage], [/^\/compose$/, 'compose', composePage],
+  [/^\/home$/, 'home', homePage], [/^\/explore$/, 'explore', explorePage], [/^\/ai$/, 'none', aiPage], [/^\/compose$/, 'compose', composePage],
   [/^\/messages$/, 'messages', messagesPage], [/^\/groups$/, 'messages', groupsPage], [/^\/group\/([0-9a-f-]{36})$/, 'messages', groupChatPage, ['id']], [/^\/group\/([0-9a-f-]{36})\/info$/, 'messages', groupInfoPage, ['id']], [/^\/join\/([a-z0-9]{6,20})$/, 'messages', joinRoute, ['code']], [/^\/chat\/([a-z0-9_]+)$/, 'messages', chatPage, ['username']],
   [/^\/notifications$/, 'none', notificationsPage], [/^\/profile$/, 'profile', profilePage],
   [/^\/u\/([a-z0-9_]+)$/, 'profile', profilePage, ['username']], [/^\/settings$/, 'profile', settingsPage],
