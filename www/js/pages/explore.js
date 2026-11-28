@@ -27,7 +27,7 @@ export async function explorePage(root) {
     if (r && !stopReels) stopReels = reelsView(reelsHost);
     if (!r && stopReels) { stopReels(); stopReels = null; }
   }
-  root.append(headerBar('استكشاف', { right: [bellButton()] }),
+  root.append(headerBar('استكشاف', { right: [h('button', { class: 'icon-btn accent', 'aria-label': 'NEXORA AI', title: 'NEXORA AI', onclick: () => (location.hash = '#/ai') }, icon('bolt', 22)), bellButton()] }),
     h('div', { class: 'page' }, tabs, wrap, results, discover, reelsHost));
   paintTabs();
 
