@@ -1,0 +1,91 @@
+/* NEXORA — profile page reference layout (RTL, neon glass) */
+.pf-page{padding-top:8px}
+.pf-top .pf-user{font-size:1.2rem;font-weight:900;text-align:right;justify-content:flex-start}
+.pf-profile-card{
+  position:relative;isolation:isolate;overflow:hidden;margin:8px 0 14px;
+  border-radius:32px;border:1px solid rgba(145,165,255,.36);
+  background:linear-gradient(155deg,rgba(12,25,51,.97),rgba(5,10,27,.98) 58%,rgba(22,10,46,.97));
+  box-shadow:0 18px 44px rgba(0,0,0,.38),0 0 25px rgba(62,104,255,.13),inset 0 1px 0 rgba(255,255,255,.1)
+}
+.pf-cover{
+  position:relative;height:164px;overflow:hidden;
+  border:1px solid rgba(135,224,255,.55);border-bottom:0;border-radius:31px 31px 44px 44px;
+  background:
+    linear-gradient(145deg,transparent 42%,rgba(32,99,255,.26) 42.5%,transparent 69%),
+    linear-gradient(25deg,rgba(0,229,255,.27),transparent 47%),
+    linear-gradient(125deg,#06295c 0%,#0865b5 35%,#4622a4 72%,#a018d1 100%);
+  box-shadow:0 0 20px rgba(24,190,255,.25),0 0 28px rgba(162,47,255,.2)
+}
+.pf-cover:after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at 8% 20%,rgba(33,230,255,.22),transparent 50%),radial-gradient(ellipse at 95% 15%,rgba(228,64,255,.22),transparent 48%);
+  pointer-events:none
+}
+.pf-card-content{position:relative;padding:0 16px 18px}
+.pf-head{position:relative;z-index:2;display:flex;justify-content:center;align-items:center;padding:0;margin:-72px 0 0}
+.pf-av-hero{width:116px;height:116px;display:grid;place-items:center}
+.pf-av-hero .pf-av-btn{
+  width:110px;height:110px;padding:4px;display:grid;place-items:center;border-radius:50%;
+  background:linear-gradient(135deg,#19eaff 0%,#248aff 48%,#b23cff 100%);
+  box-shadow:0 0 0 5px #070c1b,0 0 0 7px rgba(39,158,255,.85),0 0 0 9px rgba(178,57,255,.78),0 0 30px rgba(34,176,255,.55)
+}
+.pf-av-hero .pf-av-btn .avatar{width:100%;height:100%;border:4px solid #070c1b;box-shadow:none}
+.pf-av-hero .pf-av-btn.seen{background:linear-gradient(135deg,#61718f,#263957)}
+.pf-av-hero .pf-av-ver{inset-inline-start:-2px;bottom:3px;width:31px;height:31px;border:3px solid #071020;background:linear-gradient(135deg,#16cfff,#177bff);box-shadow:0 0 14px rgba(32,177,255,.7);font-size:17px}
+.pf-av-hero .pf-av-plus{inset-inline-start:-1px;bottom:2px;width:29px;height:29px;border:3px solid #071020}
+.pf-hero-bio{text-align:center;padding:10px 3px 0}
+.pf-name-line{display:flex;align-items:center;justify-content:center;gap:9px;color:#f4f6ff;font-size:1.72rem;font-weight:900;line-height:1.35;text-shadow:0 2px 16px rgba(67,134,255,.2)}
+.pf-name-line svg{color:#bd70ff;filter:drop-shadow(0 0 8px rgba(183,91,255,.7))}
+.pf-role-line{display:flex;justify-content:center;margin:3px 0 5px}
+.pf-role-line .role-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 15px;border-radius:22px;color:#fff;background:linear-gradient(105deg,#ff4d78,#b20a91);box-shadow:0 0 15px rgba(255,53,151,.28);font-size:.82rem;font-weight:800}
+.pf-username{margin-top:3px;color:#91a4cb!important;text-align:center!important;font-size:.95rem}
+.pf-bio-text{max-width:100%;margin:11px auto 0!important;color:#eef3ff;font-size:1rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.pf-divider{position:relative;height:1px;margin:20px 4px 17px;background:linear-gradient(90deg,transparent,rgba(40,174,255,.62),rgba(160,69,255,.55),transparent)}
+.pf-divider:after{content:"✦";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:0 10px;color:#8deaff;background:#09132b;font-size:17px;text-shadow:0 0 12px #26cfff}
+.pf-hero-stats{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 0 17px;padding:11px 4px;
+  border:1px solid rgba(133,146,255,.36);border-radius:26px;
+  background:linear-gradient(135deg,rgba(19,45,80,.83),rgba(27,17,65,.82));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 17px rgba(81,91,255,.12)
+}
+.pf-hero-stats .pf-stat{min-width:0;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:3px 2px;background:transparent;border:0;color:#aebde0}
+.pf-hero-stats .pf-stat+.pf-stat{border-inline-start:1px solid rgba(168,190,255,.23)}
+.pf-hero-stats .pf-stat b{font-size:1.65rem;line-height:1.15;color:#36aaff;text-shadow:0 0 13px rgba(37,157,255,.42)}
+.pf-hero-stats .pf-stat span{font-size:.9rem;color:#aabbe0}
+.pf-hero-actions{display:flex;gap:10px;margin:0}
+.pf-hero-actions .pf-btn,.pf-hero-actions .btn{
+  flex:1;min-width:0;min-height:54px;padding:0 12px;border-radius:28px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  color:#f6f8ff;font-size:.98rem;font-weight:800;text-decoration:none;
+  background:linear-gradient(135deg,rgba(13,57,103,.92),rgba(11,20,52,.96));
+  border:1.5px solid #23d5ff;box-shadow:0 0 15px rgba(35,201,255,.2),inset 0 1px 0 rgba(255,255,255,.13)
+}
+.pf-hero-actions .pf-edit{border-color:#b04cff;background:linear-gradient(135deg,rgba(75,25,120,.94),rgba(20,14,58,.97));box-shadow:0 0 16px rgba(169,65,255,.24),inset 0 1px 0 rgba(255,255,255,.13)}
+.pf-hero-actions .pf-manage{border-color:#27d9ff}
+.pf-hero-actions .pf-message,.pf-hero-actions .pf-share{border-color:rgba(50,184,255,.7)}
+.pf-quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:14px 0 20px}
+.pf-quick{
+  min-width:0;min-height:52px;padding:7px 5px;border-radius:28px;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  color:#f1f5ff;font:700 .9rem/1.2 inherit;
+  background:linear-gradient(140deg,rgba(17,40,77,.9),rgba(17,12,47,.93));
+  border:1px solid rgba(127,157,255,.36);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 13px rgba(64,114,255,.12)
+}
+.pf-quick svg{flex:none;color:#d7e6ff}
+.pf-quick:active,.pf-hero-actions .pf-btn:active{transform:scale(.98);filter:brightness(1.15)}
+.pf-insights{margin:8px 0 14px;padding:11px 14px;border-radius:17px;background:linear-gradient(135deg,rgba(15,38,72,.75),rgba(18,12,48,.8));border:1px solid rgba(92,160,255,.24)}
+.pf-stories{padding-top:4px}
+.pf-tabs{margin-top:10px}
+@media(max-width:380px){
+  .pf-profile-card{border-radius:27px}
+  .pf-cover{height:148px;border-radius:26px 26px 38px 38px}
+  .pf-card-content{padding-inline:12px}
+  .pf-name-line{font-size:1.52rem}
+  .pf-hero-stats .pf-stat b{font-size:1.48rem}
+  .pf-hero-actions .pf-btn,.pf-hero-actions .btn{min-height:50px;font-size:.87rem;padding-inline:7px;gap:5px}
+  .pf-quick-actions{gap:6px}
+  .pf-quick{min-height:48px;font-size:.78rem;gap:4px}
+  .pf-quick svg{width:17px;height:17px}
+}
+@media(prefers-reduced-motion:reduce){.pf-quick:active,.pf-hero-actions .pf-btn:active{transform:none}}
