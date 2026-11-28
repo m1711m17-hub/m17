@@ -138,7 +138,7 @@ export async function profilePage(root, params) {
   const pick = (accept, story) => { asStory = story; fileIn.accept = accept; fileIn.click(); };
 
   const p = await sb.from('profiles').select('*').eq('username', uname).one();
-  const topbar = (right, left) => h('header', { class: 'topbar pf-top' }, left, h('div', { class: 'topbar-title pf-user' }, p ? h('span', null, p.username, verifiedBadge(p.is_verified)) : '@' + uname), h('div', { class: 'row' }, right));
+  const topbar = (right, left) => h('header', { class: 'topbar pf-top' }, left, h('div', { class: 'topbar-title pf-user' }, isMe ? 'حسابي' : (p ? h('span', null, p.username, verifiedBadge(p.is_verified)) : '@' + uname)), h('div', { class: 'row' }, right));
   const back = h('button', { class: 'icon-btn', 'aria-label': 'رجوع', onclick: () => (history.length > 1 ? history.back() : (location.hash = '#/home')) }, icon('back', 22));
 
   if (!p) { root.append(topbar([], isMe ? null : back), box); clear(box); return box.append(h('div', { class: 'empty' }, icon('user', 44), h('h3', null, 'المستخدم غير موجود'))); }
@@ -170,23 +170,18 @@ export async function profilePage(root, params) {
     });
   }
 
-  const menu = h('button', { class: 'icon-btn', 'aria-label': 'القائمة', onclick: () => actionSheet('القائمة', [
+  const settingsMenu = h('button', { class: 'icon-btn', 'aria-label': 'الإعدادات', onclick: () => actionSheet('حسابي', [
     { label: 'الإعدادات', icon: 'settings', run: () => (location.hash = '#/settings') },
     state.perms.length ? { label: 'الإدارة', icon: 'shield', run: () => (location.hash = '#/admin') } : null,
     !p.is_verified ? { label: 'طلب توثيق الحساب', icon: 'check', run: verificationSheet } : null,
-  ]) }, icon('menu', 24));
-  const plus = h('button', { class: 'icon-btn', 'aria-label': 'إنشاء', onclick: () => actionSheet('إنشاء', [
-    { label: 'منشور نصي', icon: 'edit', run: () => (location.hash = '#/compose') },
-    { label: 'صورة', icon: 'image', run: () => pick('image/*', false) },
-    { label: 'فيديو', icon: 'video', run: () => pick('video/*', false) },
-    { label: 'حالة', icon: 'plus', run: () => pick('image/*,video/*', true) },
-  ]) }, icon('plus', 24));
+    { label: 'مشاركة الملف الشخصي', icon: 'share', run: () => shareProfileSheet(p) },
+  ]) }, icon('settings', 24));
   const more = h('button', { class: 'icon-btn', 'aria-label': 'المزيد', onclick: () => actionSheet('@' + p.username, [
     { label: 'إبلاغ عن الحساب', icon: 'flag', run: () => reportDialog('user', p.id) },
     { label: 'حظر المستخدم', icon: 'block', danger: true, run: async () => { if (await blockUser(p)) location.hash = '#/home'; } },
   ]) }, icon('more', 22));
 
-  root.append(isMe ? topbar(plus, menu) : topbar(more, back), box, fileIn);
+  root.append(isMe ? topbar(settingsMenu, null) : topbar(more, back), box, fileIn);
   clear(box);
 
   const [nPosts, nFollowers, nFollowing] = await Promise.all([
@@ -204,34 +199,52 @@ export async function profilePage(root, params) {
   const openStory = () => openViewer(groups, gi, refresh);
 
   const stat = (n, label, fn) => h('button', { class: 'pf-stat', type: 'button', onclick: fn }, h('b', null, compact(n)), h('span', null, label));
-  const av = h('div', { class: 'pf-av' },
+  const av = h('div', { class: 'pf-av pf-av-hero' },
     h('button', { class: 'pf-av-btn' + (hasStory ? (groups[gi].allViewed ? ' seen' : ' story') : ''), type: 'button', 'aria-label': 'الصورة الشخصية',
-      onclick: () => (hasStory ? openStory() : (p.avatar_url ? viewImage(p.avatar_url) : null)) }, avatar(p, 86)),
+      onclick: () => (hasStory ? openStory() : (p.avatar_url ? viewImage(p.avatar_url) : null)) }, avatar(p, 96)),
     p.is_verified ? h('span', { class: 'pf-av-ver', title: 'حساب موثّق بموافقة المالك', 'aria-label': 'حساب موثّق' }, '✓')
       : (isMe ? h('button', { class: 'pf-av-plus', type: 'button', 'aria-label': 'إضافة حالة', onclick: () => pick('image/*,video/*', true) }, icon('plus', 14)) : null));
 
-  box.append(h('div', { class: 'pf-head' }, av,
-    h('div', { class: 'pf-stats' }, stat(nPosts, 'منشورات', () => document.querySelector('.pf-tabs')?.scrollIntoView({ behavior: 'smooth' })),
-      stat(nFollowers, 'المتابعون', () => userListSheet('المتابِعون', p.id, 'followers')),
-      stat(nFollowing, 'متابعة', () => userListSheet('يتابع', p.id, 'following')))));
-  box.append(h('div', { class: 'pf-bio' },
-    h('div', { class: 'pf-name' }, p.display_name || p.username, badge(p.role)),
-    h('div', { class: 'muted small', dir: 'ltr', style: { textAlign: 'start' } }, '@' + p.username + (p.is_private ? ' · 🔒 حساب خاص' : '')),
-    p.bio && h('p', { class: 'bio' }, p.bio)));
-
   const insights = isMe ? h('div', { class: 'pf-insights' }, h('b', null, 'لوحة المعلومات الخاصة بك'), h('span', { class: 'muted small' }, 'جارٍ الحساب...')) : null;
-  if (insights) box.append(insights);
+  const profileActions = isMe
+    ? h('div', { class: 'pf-actions pf-hero-actions' },
+        h('button', { class: 'pf-btn pf-edit', onclick: () => editProfileSheet(refresh) }, icon('edit', 19), 'تعديل الملف'),
+        state.perms.length ? h('button', { class: 'pf-btn pf-manage', onclick: () => (location.hash = '#/admin') }, icon('shield', 20), 'الإدارة') : null)
+    : h('div', { class: 'pf-actions pf-hero-actions' },
+        followButton(p, { onChange: (f) => { amFollowing = f; } }),
+        h('a', { class: 'pf-btn pf-message', href: `#/chat/${p.username}` }, icon('chat', 18), 'مراسلة'),
+        h('button', { class: 'pf-btn pf-share', onclick: () => shareProfileSheet(p) }, icon('share', 18), 'مشاركة'));
 
-  box.append(isMe
-    ? h('div', { class: 'pf-actions' }, h('button', { class: 'pf-btn', onclick: () => editProfileSheet(refresh) }, 'تعديل الملف الشخصي'), h('button', { class: 'pf-btn', onclick: () => shareProfileSheet(p) }, 'مشاركة الملف الشخصي'))
-    : h('div', { class: 'pf-actions' }, followButton(p, { onChange: (f) => { amFollowing = f; } }), h('a', { class: 'pf-btn', href: `#/chat/${p.username}` }, 'مراسلة'), h('button', { class: 'pf-btn', onclick: () => shareProfileSheet(p) }, 'مشاركة')));
+  const profileCard = h('section', { class: 'pf-profile-card' },
+    h('div', { class: 'pf-cover' }),
+    h('div', { class: 'pf-card-content' },
+      h('div', { class: 'pf-head' }, av),
+      h('div', { class: 'pf-bio pf-hero-bio' },
+        h('div', { class: 'pf-name-line' }, p.role === 'OWNER' ? icon('crown', 22) : null, h('b', null, p.display_name || p.username)),
+        p.role && p.role !== 'USER' ? h('div', { class: 'pf-role-line' }, badge(p.role)) : null,
+        h('div', { class: 'muted small pf-username', dir: 'ltr' }, '@' + p.username + (p.is_private ? ' · 🔒 حساب خاص' : '')),
+        p.bio && h('p', { class: 'bio pf-bio-text' }, p.bio)),
+      h('div', { class: 'pf-divider' }),
+      h('div', { class: 'pf-stats pf-hero-stats' },
+        stat(nPosts, 'منشور', () => document.querySelector('.pf-tabs')?.scrollIntoView({ behavior: 'smooth' })),
+        stat(nFollowers, 'متابع', () => userListSheet('المتابِعون', p.id, 'followers')),
+        stat(nFollowing, 'يتابع', () => userListSheet('يتابع', p.id, 'following'))),
+      profileActions));
 
+  box.append(profileCard);
+  if (isMe) box.append(h('div', { class: 'pf-quick-actions' },
+    h('button', { class: 'pf-quick', type: 'button', onclick: () => (location.hash = '#/compose') }, icon('edit', 19), 'نص'),
+    h('button', { class: 'pf-quick', type: 'button', onclick: () => pick('image/*,video/*', true) }, icon('plus', 21), 'حالة'),
+    h('button', { class: 'pf-quick', type: 'button', onclick: () => pick('video/*', false) }, icon('video', 19), 'فيديو'),
+    h('button', { class: 'pf-quick', type: 'button', onclick: () => pick('image/*', false) }, icon('image', 19), 'صورة')));
   if (hasStory || isMe) {
     const row = h('div', { class: 'pf-stories' });
     if (hasStory) row.append(h('button', { class: 'pf-circle', type: 'button', onclick: openStory }, h('span', { class: 'pf-ring' + (groups[gi].allViewed ? ' seen' : '') }, avatar(p, 62)), h('span', null, isMe ? 'حالتي' : 'الحالة')));
     if (isMe) row.append(h('button', { class: 'pf-circle', type: 'button', onclick: () => pick('image/*,video/*', true) }, h('span', { class: 'pf-ring new' }, icon('plus', 30)), h('span', null, 'جديد')));
     box.append(row);
   }
+
+  if (insights) box.append(insights);
 
   const tabs = h('div', { class: 'pf-tabs' });
   const grid = h('div', { class: 'pg-grid' });
