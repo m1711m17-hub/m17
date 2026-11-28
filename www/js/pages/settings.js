@@ -3,7 +3,7 @@ import { goOffline, touchPresence, sb, state, loadMe, PROFILE_MINI } from '../ap
 import { headerBar } from './home.js';
 import { pickPeople } from './people.js';
 import { VIS_LABEL } from './stories.js';
-import { pushSupported, pushStatus, initPush, dropPushToken } from '../push.js';
+import { pushSupported, pushStatus, initPush, dropPushToken, applyNotificationSound } from '../push.js';
 import { editProfileSheet } from './profile.js';
 import { checkForUpdates, updateState, getWhatsappUrl, openExternal, updateCard } from '../update.js';
 import { setSoundFromFile, soundName, resetSound, previewSound, setSoundPreset, getSoundPresets, selectedSoundPreset, hasCustomSound } from '../sounds.js';
@@ -94,16 +94,17 @@ export async function settingsPage(root, params, ctx) {
       const paint = () => {
         clear(list);
         const defaultActive = !chosen && !hasCustomSound(key);
-        list.append(h('div', { class: 'set-row', style: { cursor: 'pointer' }, onclick: () => {
-          resetSound(key); chosen = ''; toast('تم اعتماد النغمة الأصلية', 'ok'); close();
+        list.append(h('div', { class: 'set-row', style: { cursor: 'pointer' }, onclick: async () => {
+          try { resetSound(key); chosen = ''; await applyNotificationSound(key); toast('تم اعتماد النغمة الأصلية', 'ok'); close(); }
+          catch (e) { toast(e.message || 'تعذر تطبيق النغمة', 'err'); }
         } },
           h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: defaultActive ? 'var(--accent)' : 'var(--muted)' } }, icon(defaultActive ? 'check-circle' : 'circle', 21)),
           h('div', { class: 'grow' }, h('b', null, 'النغمة الافتراضية'), h('div', { class: 'muted small' }, 'صوت التطبيق الأصلي'))));
         getSoundPresets(key).forEach((preset) => {
           const active = chosen === preset.id;
           const radio = h('span', { class: 'set-ico', style: { width: '34px', height: '34px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: active ? 'var(--accent)' : 'var(--muted)' } }, icon(active ? 'check-circle' : 'circle', 21));
-          const play = h('button', { class: 'btn ghost sm', onclick: (e) => { e.stopPropagation(); setSoundPreset(key, preset.id); chosen = preset.id; previewSound(key); paint(); } }, '▶');
-          const item = h('div', { class: 'set-row', style: { cursor: 'pointer' }, onclick: () => { try { setSoundPreset(key, preset.id); chosen = preset.id; previewSound(key); paint(); } catch (e) { toast(e.message, 'err'); } } },
+          const play = h('button', { class: 'btn ghost sm', onclick: async (e) => { e.stopPropagation(); try { setSoundPreset(key, preset.id); chosen = preset.id; await applyNotificationSound(key); previewSound(key); paint(); } catch (er) { toast(er.message || 'تعذر تطبيق النغمة', 'err'); } } }, '▶');
+          const item = h('div', { class: 'set-row', style: { cursor: 'pointer' }, onclick: async () => { try { setSoundPreset(key, preset.id); chosen = preset.id; await applyNotificationSound(key); previewSound(key); paint(); } catch (e) { toast(e.message || 'تعذر تطبيق النغمة', 'err'); } } },
             radio, h('div', { class: 'grow' }, h('b', null, preset.name), h('div', { class: 'muted small' }, 'نغمة NEXORA')), play);
           list.append(item);
         });
@@ -115,7 +116,8 @@ export async function settingsPage(root, params, ctx) {
         try {
           const name = await setSoundFromFile(key, picked);
           chosen = '';
-          toast('تم اعتماد ' + name, 'ok');
+          await applyNotificationSound(key);
+          toast('تم اعتماد ' + name + ' للإشعارات', 'ok');
           close();
         } catch (e) {
           toast(e?.message || 'تعذر حفظ النغمة', 'err');
